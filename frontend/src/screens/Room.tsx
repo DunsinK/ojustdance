@@ -1,94 +1,7 @@
 import type { ReactNode } from "react";
 import type { GameSnapshot, GameRenderers } from "../types";
-import { Spark } from "../components/Brand";
 import { MoveQueue, formatTime } from "../components/GameUI";
 import { Button } from "../ui/Button";
-
-export function Matchmaking({
-  game,
-  renderers,
-  stream,
-  cameraControl,
-  onCancel,
-}: {
-  game: GameSnapshot;
-  renderers: GameRenderers;
-  stream?: MediaStream;
-  cameraControl: ReactNode;
-  onCancel: () => void;
-}) {
-  const found = game.phase === "found";
-  const Video = renderers.Video;
-  return (
-    <div className="matchmaking">
-      <div className="room-heading">
-        <div>
-          <span className="eyebrow">
-            {found
-              ? "CONNECTION MADE"
-              : "LOOKING FOR YOUR OTHER HALF OF THE BEAT"}
-          </span>
-          <h1>{found ? "New rival. Same rhythm." : "Find your frequency."}</h1>
-        </div>
-        <span className="badge">
-          {game.demo ? "SIMULATED MATCHMAKING" : game.connection.toUpperCase()}
-        </span>
-      </div>
-      <div className="lobby-grid">
-        <div className="camera-check">
-          <div className="section-label">
-            <span>01 / YOUR SIDE</span>
-            <span>CAMERA CHECK</span>
-          </div>
-          <Video
-            player={game.players[0]}
-            local
-            demo={game.demo}
-            stream={stream}
-          />
-          {cameraControl}
-        </div>
-        <section className={`match-engine ${found ? "matched" : ""}`}>
-          <div className="match-orbit" aria-hidden="true">
-            <div className="orbit-track track-one" />
-            <div className="orbit-track track-two" />
-            <div className="orbit-track track-three" />
-            <span className="orbit-node node-you">01</span>
-            <span className="orbit-node node-them">{found ? "02" : "?"}</span>
-            <div className="orbit-core">
-              <Spark />
-            </div>
-          </div>
-          <div className="match-message">
-            <span className="eyebrow">
-              {found
-                ? "SAME FLOOR. DIFFERENT MOVES."
-                : "TWO SIGNALS. ONE CONNECTION."}
-            </span>
-            <h2>
-              {found
-                ? "You’re on the same beat."
-                : "Your next rival is out there."}
-            </h2>
-            <p role="status">
-              {found
-                ? "Match found. Preparing your shared routine…"
-                : "Searching for a dance partner. Stay loose."}
-            </p>
-            <Button variant="secondary" onClick={onCancel}>
-              Cancel matchmaking
-            </Button>
-            <span className="microcopy">
-              {game.demo
-                ? "Demo opponent · no live connection"
-                : "You can leave the queue at any time."}
-            </span>
-          </div>
-        </section>
-      </div>
-    </div>
-  );
-}
 
 export function Preview({
   game,
@@ -194,3 +107,6 @@ export function Preview({
     </div>
   );
 }
+
+// Preserve the existing import path for frontend consumers.
+export { Matchmaking } from "./Matchmaking";

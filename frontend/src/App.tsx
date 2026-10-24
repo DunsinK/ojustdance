@@ -8,7 +8,8 @@ import { useCamera } from "./hooks/useCamera";
 import { ReducedMotionContext } from "./ui/Motion";
 import { Button } from "./ui/Button";
 import { Landing } from "./screens/Landing";
-import { Matchmaking, Preview } from "./screens/Room";
+import { Preview } from "./screens/Room";
+import { Matchmaking } from "./screens/Matchmaking";
 import { Battle } from "./screens/Battle";
 import { Results } from "./screens/Results";
 const defaults: GameRenderers = {
@@ -37,28 +38,28 @@ export function App({
   const systemReduced = useReducedMotion();
   const quiet = reduceMotion || !!systemReduced;
   const { phase } = game;
-  const home = phase === "home";
+  const [cancelledSearch, setCancelledSearch] = useState(false);
+  const home = phase === "home" && !cancelledSearch;
+  const lobby =
+    phase === "searching" ||
+    phase === "found" ||
+    (phase === "home" && cancelledSearch);
   const failed =
     game.connection === "error" || game.connection === "disconnected";
   const battle = phase === "battle" || phase === "countdown";
-  const step =
-    phase === "searching" || phase === "found"
-      ? 0
-      : phase === "preview"
-        ? 1
-        : battle
-          ? 2
-          : 3;
+  const step = lobby ? 0 : phase === "preview" ? 1 : battle ? 2 : 3;
   const videoStreams = {
     ...streams,
     [game.players[0].id]: camera.stream ?? streams[game.players[0].id],
   };
+  const focusKey = lobby ? "matchmaking" : phase;
   useEffect(() => {
     main.current?.focus();
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, [phase, failed]);
+  }, [focusKey, failed, cancelledSearch]);
   const act = (action: GameAction) => {
     if (action === "leave" || action === "cancel") camera.stop();
+    setCancelledSearch(action === "cancel");
     adapter.dispatch(action);
   };
   const cameraControl = (
@@ -101,7 +102,7 @@ export function App({
   return (
     <ReducedMotionContext.Provider value={quiet}>
       <div
-        className={`app ${home ? "is-home" : "is-game"} ${battle ? "is-battle" : ""} ${quiet ? "motion-reduced" : ""}`}
+        className={`app ${home ? "is-home" : "is-game"} ${battle ? "is-battle" : ""} ${home || lobby ? "is-entry" : ""} ${quiet ? "motion-reduced" : ""}`}
       >
         <a className="skip-link" href="#main">
           Skip to content
@@ -147,14 +148,25 @@ export function App({
         </header>
         <main id="main" ref={main} tabIndex={-1}>
           <motion.div
-            key={`${phase}-${failed}`}
-            className={home ? "" : "game-content"}
+            key={lobby ? "matchmaking" : `${phase}-${failed}`}
+            className={home ? "" : lobby ? "entry-content" : "game-content"}
             initial={quiet ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.32 }}
           >
             {home ? (
               <Landing onFind={() => act("find")} />
+            ) : lobby ? (
+              <Matchmaking
+                game={game}
+                renderers={renderers}
+                stream={videoStreams[game.players[0].id]}
+                cameraControl={cameraControl}
+                cancelled={cancelledSearch}
+                onCancel={() => act("cancel")}
+                onRetry={() => act("retry")}
+                onLeave={() => act("leave")}
+              />
             ) : failed ? (
               <section className="status-screen">
                 <Spark />
@@ -175,14 +187,6 @@ export function App({
                   Back to home
                 </Button>
               </section>
-            ) : phase === "searching" || phase === "found" ? (
-              <Matchmaking
-                game={game}
-                renderers={renderers}
-                stream={videoStreams[game.players[0].id]}
-                cameraControl={cameraControl}
-                onCancel={() => act("cancel")}
-              />
             ) : phase === "preview" ? (
               <Preview
                 game={game}
@@ -206,7 +210,7 @@ export function App({
               />
             )}
             {!home &&
-              (failed || battle || phase === "results") &&
+              ((!lobby && failed) || battle || phase === "results") &&
               camera.status === "on" && (
                 <div className="camera-in-session">
                   <span>
@@ -218,7 +222,7 @@ export function App({
                   </Button>
                 </div>
               )}
-            {!home && demoControls && (
+            {!home && !cancelledSearch && demoControls && (
               <details className="demo-tools">
                 <summary>
                   Demo controls{" "}

@@ -9,6 +9,9 @@ test("complete round requires readiness; supports next opponent and rematch", ()
     demo.skip();
     assert.equal(demo.getSnapshot().phase, "found");
     demo.skip();
+    assert.equal(demo.getSnapshot().phase, "found");
+    assert.equal(demo.getSnapshot().connection, "connecting");
+    demo.skip();
     assert.equal(demo.getSnapshot().phase, "preview");
     demo.skip();
     assert.equal(demo.getSnapshot().phase, "preview");

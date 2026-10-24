@@ -1,146 +1,181 @@
-import { Spark } from "../components/Brand";
-import { VideoPanel } from "../components/Stage";
-import { MoveQueue, Score } from "../components/GameUI";
-import { MoveIcon } from "../components/Performer";
-import { Button } from "../ui/Button";
-import { InView } from "../ui/Motion";
+import { useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
 import { demoDance } from "../demo/controller";
-import type { Player } from "../types";
-const showcasePlayers: readonly Player[] = [
-  {
-    id: "showcase-you",
-    name: "You",
-    color: "cobalt",
-    ready: true,
-    score: 8240,
-  },
-  {
-    id: "showcase-rival",
-    name: "Rival",
-    color: "coral",
-    ready: true,
-    score: 7950,
-  },
-];
+import { AnimatedNumber, useQuietMotion } from "../ui/Motion";
+import { DemoAvatar, MatchButton } from "../components/entry/EntryMotion";
+
 export function Landing({ onFind }: { onFind: () => void }) {
+  const quiet = useQuietMotion();
+  const [move, setMove] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const stage = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!playing || quiet) return;
+    const timer = window.setInterval(
+      () => setMove((value) => (value + 1) % demoDance.moves.length),
+      2000,
+    );
+    const stop = window.setTimeout(() => setPlaying(false), 12000);
+    const onVisibility = () => {
+      if (document.hidden) setPlaying(false);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) setPlaying(false);
+    });
+    if (stage.current) observer.observe(stage.current);
+    return () => {
+      clearInterval(timer);
+      clearTimeout(stop);
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [playing, quiet]);
+  useEffect(() => {
+    if (quiet) setPlaying(false);
+  }, [quiet]);
   return (
-    <div className="landing">
-      <section className="hero-grid">
-        <InView className="hero-copy">
-          <span className="eyebrow">
-            <span className="status-dot" /> STRANGERS IN SYNC. RIVALS IN RHYTHM.
-          </span>
-          <h1>
-            Two strangers.
-            <br />
-            <em>One beat.</em>
-          </h1>
+    <div className="entry-landing">
+      <section className="entry-hero" aria-labelledby="entry-title">
+        <div className="entry-kicker">
+          <span>SOCIAL DANCE BATTLES</span>
+          <span>HACKTX / VOL. 01</span>
+        </div>
+        <h1 id="entry-title">
+          {["Two strangers.", "One beat."].map((line, i) => (
+            <span className="entry-title-line" key={line}>
+              <motion.span
+                initial={quiet ? false : { y: "100%" }}
+                animate={{ y: 0 }}
+                transition={{ duration: 0.42, delay: i * 0.1 }}
+              >
+                {line}
+              </motion.span>
+            </span>
+          ))}
+        </h1>
+        <div className="entry-invitation">
           <p>
-            A random rival. An AI-made routine.
+            A random rival. One AI-made routine.
             <br />
-            Thirty seconds to make it yours.
+            Your room becomes the dance floor.
           </p>
-          <Button onClick={onFind} arrow className="hero-cta">
-            Find a match
-          </Button>
-          <div className="hero-footnote">
-            <span>No sign-up. No perfect moves required.</span>
-            <span>Camera stays off until you say so.</span>
-          </div>
-        </InView>
-        <InView delay={0.12} className="hero-preview">
-          <div className="preview-window-bar">
-            <span className="eyebrow">
-              A LITTLE COMPETITION. A LOT OF ENERGY.
-            </span>
-            <span className="badge">GAME PREVIEW</span>
-          </div>
-          <div className="showcase-scores">
-            {showcasePlayers.map((p, i) => (
-              <Score key={p.id} player={p} local={i === 0} />
-            ))}
-          </div>
-          <div className="showcase-feeds">
-            {showcasePlayers.map((p, i) => (
-              <VideoPanel key={p.id} player={p} local={i === 0} demo>
-                <span>{i === 0 ? "PERFECT" : "GOOD"}</span>
-                <span>DEMO</span>
-              </VideoPanel>
-            ))}
-            <span className="showcase-vs">VS</span>
-          </div>
-          <div className="showcase-lane">
-            <div className="mini-coach">
-              <MoveIcon index={1} />
-              <span>THE TARGET</span>
-            </div>
-            <MoveQueue dance={demoDance} elapsed={0} compact />
-          </div>
-          <div className="showcase-footer">
+          <MatchButton onClick={onFind} />
+        </div>
+        <section
+          ref={stage}
+          className="entry-stage"
+          aria-label="Interactive illustrated choreography demo"
+        >
+          <div className="entry-stage-top">
             <span>
-              <i /> After Hours / 120 BPM
+              <i /> INTERACTIVE DEMO
             </span>
-            <span>YOUR NEXT MOVE STARTS HERE ↗</span>
+            <span>ILLUSTRATED MOVES · NO AUDIO OR CAMERA</span>
           </div>
-        </InView>
-      </section>
-      <InView className="landing-section" delay={0.08}>
-        <div className="section-heading" id="how-it-works">
-          <span className="eyebrow">LESS SCROLLING. MORE MOVING.</span>
-          <h2>Your room is the dance floor.</h2>
-          <p>Three steps. One shared moment.</p>
-        </div>
-        <div className="feature-grid">
-          <article className="feature feature-match">
-            <span className="eyebrow">01 / MEET</span>
-            <div className="feature-art match-art" aria-hidden="true">
-              <span>YOU</span>
-              <i />
-              <span>?</span>
+          <div className="entry-stage-floor">
+            <div className="entry-player entry-player-you">
+              <span className="entry-player-label">01 / YOU</span>
+              <DemoAvatar move={move} />
+              <span className="entry-player-foot">YOUR MOVES.</span>
             </div>
-            <h3>Meet your next rival.</h3>
-            <p>
-              One tap connects you with someone new. Skip the profiles. Find the
-              energy.
-            </p>
-          </article>
-          <article className="feature feature-learn">
-            <span className="eyebrow">02 / LEARN</span>
-            <div className="feature-art moves-art">
-              <MoveIcon />
-              <MoveIcon index={1} />
-              <MoveIcon index={2} />
+            <div className="entry-stage-center">
+              <span className="entry-stage-index">
+                0<AnimatedNumber value={move + 1} />
+                <small>/ 06</small>
+              </span>
+              <span className="eyebrow">SHARED CHOREOGRAPHY</span>
+              <h2>{demoDance.moves[move].name}</h2>
+              <div className="entry-beat-marks" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+                <i />
+              </div>
+              <span>
+                LEARN THE SAME MOVES.
+                <br />
+                MAKE THEM YOURS.
+              </span>
             </div>
-            <h3>Catch the choreography.</h3>
-            <p>
-              Get the same AI-generated routine. Watch the coach, then make it
-              your own.
-            </p>
-          </article>
-          <article className="feature feature-battle">
-            <span className="eyebrow">03 / COMPETE</span>
-            <div className="feature-art score-art" aria-hidden="true">
-              <span>PERFECT</span>
-              <strong>
-                +240
-                <Spark />
-              </strong>
+            <div className="entry-player entry-player-rival">
+              <span className="entry-player-label">02 / YOUR NEXT RIVAL</span>
+              <DemoAvatar move={move} rival />
+              <span className="entry-player-foot">ONE RHYTHM.</span>
             </div>
-            <h3>Leave it on the floor.</h3>
-            <p>
-              Dance in sync. Chase your high score. Run it back with a new
-              connection.
-            </p>
-          </article>
-        </div>
-      </InView>
-      <section className="ground-rules" id="ground-rules">
-        <Spark />
-        <p>
-          <strong>Good moves start with good energy.</strong> Make space. Be
-          kind. Leave whenever you want.
+          </div>
+          <div className="entry-track-controls">
+            <div>
+              <strong>{demoDance.title}</strong>
+              <span>
+                {demoDance.bpm} BPM · {demoDance.difficulty} · Sample routine
+              </span>
+            </div>
+            <button
+              className="entry-play"
+              onClick={() => {
+                if (quiet) setMove((value) => (value + 1) % 6);
+                else setPlaying((value) => !value);
+              }}
+              aria-pressed={quiet ? undefined : playing}
+            >
+              {quiet
+                ? "Next move →"
+                : playing
+                  ? "Ⅱ Pause demo"
+                  : "▶ Play 12s demo"}
+            </button>
+          </div>
+          <div
+            className="entry-move-selector"
+            role="group"
+            aria-label="Explore demo choreography"
+          >
+            {demoDance.moves.map((item, index) => (
+              <button
+                key={item.id}
+                aria-pressed={move === index}
+                onClick={() => {
+                  setPlaying(false);
+                  setMove(index);
+                }}
+              >
+                <span>0{index + 1}</span>
+                {item.name}
+              </button>
+            ))}
+          </div>
+        </section>
+        <p className="entry-permission">
+          No sign-up. No perfect moves required.{" "}
+          <span>Your camera stays off until you enable it.</span>
         </p>
-        <span className="badge">HACKTX / 2026</span>
+      </section>
+      <section className="entry-how" id="how-it-works" aria-label="How to play">
+        {[
+          ["Meet a stranger.", "Skip the profiles. Find a new dance partner."],
+          [
+            "Catch the routine.",
+            "Watch your shared AI choreography for 30 seconds.",
+          ],
+          [
+            "Own the beat.",
+            "Dance together. Compete on movement. Run it back.",
+          ],
+        ].map(([title, body], i) => (
+          <article key={title}>
+            <span>0{i + 1}</span>
+            <div>
+              <h2>{title}</h2>
+              <p>{body}</p>
+            </div>
+          </article>
+        ))}
+      </section>
+      <section className="entry-rules" id="ground-rules">
+        <strong>GOOD ENERGY ONLY.</strong>
+        <p>Make space. Be kind. Leave whenever you want.</p>
+        <span aria-hidden="true">↗</span>
       </section>
     </div>
   );

@@ -107,7 +107,13 @@ export class DemoController implements GameAdapter {
         this.enter("found", 2200);
         break;
       case "found":
+        if (this.state.connection !== "connecting") {
+          this.emit({ connection: "connecting" });
+          this.enter("found", 1400);
+          break;
+        }
         this.emit({
+          connection: "connected",
           players: [
             { ...this.state.players[0], ready: false },
             { ...this.state.players[1], ready: true },
