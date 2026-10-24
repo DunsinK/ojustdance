@@ -44,7 +44,22 @@ npm run preview  # serve the production build locally
 npm run lint     # ESLint
 ```
 
+## Env
+
+Create `frontend/.env` (see `.env.example`):
+
+```
+VITE_API_URL=http://localhost:3001
+```
+
+Restart `npm run dev` after changing env vars (Vite only reads them at startup).
+
+## API smoke test
+
+1. Start the backend: `cd backend && npm run dev`
+2. Start this app: `npm run dev`
+3. Open **/api-test** → **Ping /health**
+
 ## Notes
 
 - Dev server defaults to port **5173**. If something else is using it (e.g. the MediaPipe `demo`), Vite will pick the next free port — check the terminal output.
-- Point API calls at the Express backend (**http://localhost:3001**) when you wire networking.

@@ -6,6 +6,7 @@ const links = [
   { to: "/battle", label: "Battle" },
   { to: "/map", label: "Map" },
   { to: "/charts", label: "Charts" },
+  { to: "/api-test", label: "API" },
 ];
 
 export function Layout() {

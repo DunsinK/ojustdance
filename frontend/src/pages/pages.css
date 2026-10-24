@@ -26,6 +26,80 @@
   margin-top: 1.5rem;
 }
 
+/* —— API test —— */
+.api-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  max-width: 36rem;
+  padding: 1.25rem;
+  border: 2px solid var(--ink);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.api-panel code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.api-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin: 0;
+  width: 100%;
+}
+
+.api-stats > div {
+  margin: 0;
+}
+
+.api-stats dt {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.api-stats dd {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+}
+
+.api-status.ok {
+  color: #3a7a00;
+}
+
+.api-status.error {
+  color: var(--signal);
+}
+
+.api-status.loading {
+  color: var(--muted);
+}
+
+.api-error {
+  color: var(--signal);
+  font-weight: 600;
+}
+
+.api-json {
+  margin: 0;
+  width: 100%;
+  max-height: 280px;
+  overflow: auto;
+  padding: 0.85rem 1rem;
+  background: #121820;
+  color: #e8eef7;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
 /* —— Battle —— */
 .arena {
   display: grid;

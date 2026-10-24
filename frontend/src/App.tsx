@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
+import { ApiTest } from "./pages/ApiTest";
 import { Battle } from "./pages/Battle";
 import { Charts } from "./pages/Charts";
 import { Home } from "./pages/Home";
@@ -14,6 +15,7 @@ export default function App() {
           <Route path="battle" element={<Battle />} />
           <Route path="map" element={<Map />} />
           <Route path="charts" element={<Charts />} />
+          <Route path="api-test" element={<ApiTest />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

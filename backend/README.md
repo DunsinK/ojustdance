@@ -60,7 +60,19 @@ $env:PORT=4000; node server.js
 PORT=4000 node server.js
 ```
 
+## Env
+
+Copy `.env.example` → `.env` if needed:
+
+```
+PORT=3001
+FRONTEND_ORIGIN=http://localhost:5173
+```
+
+`FRONTEND_ORIGIN` is used for CORS so the Vite app can call this API.
+
 ## Notes
 
 - Keep this on a different port than the Vite frontend (default frontend **5173**, backend **3001**).
 - On Railway, bind to `process.env.PORT` (already used in `server.js`).
+- Frontend smoke test: open **/api-test** and click **Ping /health**.
