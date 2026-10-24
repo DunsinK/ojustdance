@@ -24,6 +24,16 @@
   pointer-events: none;
 }
 
+.pose-stage video[controls] {
+  z-index: 1;
+}
+
+.pose-stage:has(video[controls]) canvas {
+  /* Keep overlay visible above controls bar area without blocking scrub */
+  z-index: 2;
+  pointer-events: none;
+}
+
 .pose-stage .mirror {
   transform: scaleX(-1);
 }

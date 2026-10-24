@@ -55,14 +55,14 @@ VITE_API_URL=http://localhost:3001
 
 Restart `npm run dev` after changing env vars (Vite only reads them at startup).
 
-## Map (pose + timeline)
+## Map (pose + timeline + preview video)
 
-1. Open **/map** → **Enable camera**
-2. **Record** / **Pause** to capture clips on the timeline
-3. Click a clip to select → **Delete clip**; **Close gaps** packs takes together
-4. **Export JSON** for a chart file (~15 Hz relative landmarks)
+1. Open **/map**
+2. **Enable camera** → **Record** / **Pause** / **Stop** (Stop finalizes WebM preview), or **Import video** (MediaPipe analyzes the file)
+3. Timeline: select / delete clips, close gaps
+4. **Export JSON + video** downloads the chart and preview for later backend upload
 
-Battle page is still UI-only (no MediaPipe yet). Shared pose code lives in `src/pose/` for reuse later.
+Battle page is still UI-only. Shared pose code lives in `src/pose/`.
 
 ## API smoke test
 
