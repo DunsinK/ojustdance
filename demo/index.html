@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MediaPipe Pose Demo</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <h1>MediaPipe Pose</h1>
+        <p>Local webcam body tracking — smoke test before Just Dance CV</p>
+      </header>
+
+      <section class="stage">
+        <video id="webcam" playsinline autoplay muted></video>
+        <canvas id="overlay"></canvas>
+        <div id="status" class="status">Click Start to enable camera</div>
+      </section>
+
+      <div class="controls">
+        <button id="startBtn" type="button">Start</button>
+        <label class="field">
+          Model
+          <select id="modelSelect">
+            <option value="lite" selected>Lite (fast)</option>
+            <option value="full">Full</option>
+            <option value="heavy">Heavy (accurate)</option>
+          </select>
+        </label>
+      </div>
+
+      <dl class="stats">
+        <div><dt>FPS</dt><dd id="fps">—</dd></div>
+        <div><dt>Landmarks</dt><dd id="landmarkCount">—</dd></div>
+        <div><dt>Latency</dt><dd id="latency">—</dd></div>
+      </dl>
+    </main>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>
