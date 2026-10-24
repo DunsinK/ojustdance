@@ -1,50 +1,43 @@
-# Shared Beat design system
+# ojustdance — redesign system
 
-## Direction
+## Art direction
 
-Social rhythm gaming: an editorial poster meets an approachable dance floor. Two geometric figures, two colors, one central beat. Flat colors, bold type, fine borders and generous negative space. No gradients or dashboard navigation.
+A competitive rhythm-game floor, framed like an independent music release. Near-black canvas, flat charcoal panels, large lime/coral score numerals, concise uppercase labels, and a tight collection of circular records, intersecting orbits and directional cues. The real supplied wordmark is the primary identity. The previous blue/coral Shared Beat identity has been replaced.
 
-The ui-ux-pro-max gaming search identified bold gaming typography, feature showcase structure and an immersive stage. Its proposed hyperrealism, purple palette and complex effects were deliberately adapted to the requested flat cobalt/coral brand and lightweight hackathon scope. React guidance informed timer and subscription cleanup. User palette and reduced-motion requirements take precedence over database recommendations.
+The ui-ux-pro-max gaming recommendations informed an immersive game stage, clear hierarchy and controlled motion. Its suggested purple palette, hyperrealism and complex effects were overridden by the supplied brand and the explicit flat-color constraint.
 
-## Tokens
+## Tokens and type
 
-`src/styles/tokens.css` is the source of truth: Electric Cobalt #485BFF, Punch Coral #FF6B4A, Midnight Ink #14151F, Soft Charcoal #252735, Cloud White #F8F8FC, Muted Slate #AAB0C2. Light cobalt is used for readable small accents on dark surfaces. White labels on cobalt buttons; coral uses ink or remains a decorative accent. System Arial/Helvetica avoids network-dependent font loading. Strong, tightly tracked headings; normal body tracking; uppercase metadata only for short labels.
+`src/styles/tokens.css` owns color, typography, spacing, radii and motion tokens. Electric Lime #D7FF52 identifies the local player and primary actions. Signal Coral #FF5148 identifies the rival. Near Black #0B1016, Charcoal #191D25, Soft White #F7F8FA and Muted Text #A9AFBD provide the neutral hierarchy. The error-text tint is lighter coral for small explanatory copy.
 
-## Components and hierarchy
+Space Grotesk is self-hosted with font-display swap and a system fallback. Scores use tabular figures. Body copy uses normal tracking; compact labels use modest uppercase tracking. No external fonts are fetched at runtime.
 
-- Temporary eight-point star mark; replace `Brand`/`Star` when the official asset arrives.
-- One primary action per view: find, ready, next opponent. Cancel/leave stay secondary and available.
-- Local player: cobalt + “You / P1”; opponent: coral + “Stranger”. Labels carry identity independently of color.
-- Large unobstructed video panels. Scores sit above; move cues and progress sit below.
-- Thin outlines define surfaces. Rounded panels contrast with geometric poster artwork.
-- 700px and 1000px responsive breakpoints; stacked preview and compressed two-player battle on phones. Desktop is the intended full-body gameplay surface.
-- Motion means progress: searching pulse and short screen entry. No perpetual hero animation. Respect OS reduced motion and the footer motion toggle.
+Measured token contrasts: near-black on lime 16.65:1; muted text on charcoal 7.68:1; coral on charcoal 5.24:1; control border on charcoal 4.07:1.
 
-## Manual QA checklist
+## Screens
 
-- At 375px, 768px, desktop, and landscape: check horizontal overflow, wrapping, video identity labels and countdown.
-- Keyboard-only: find → cancel → find → ready → results → next; focus follows each phase.
-- Test reduced motion and browser zoom at 200%.
-- Camera denied, unavailable, enabled/off, leave while permission prompt is open, and unmount cleanup.
-- Demo controls: disconnect and error, recover, skip preview before ready, then ready after preview.
-- Real integrations: server clock drift, remote disconnect, audio autoplay permission, avatar loading failure and score reconciliation.
+- **Landing:** editorial headline paired with an assembled game preview: opposing player canvases, scores, coach cue and upcoming move cards. Original vector performers replace stick-figure hero artwork. Three concise feature panels replace repetitive marketing sections.
+- **Matchmaking:** animated lime/coral signals converge around a shared center. The found state locks them together. Local video readiness, demo labeling and cancel remain explicit.
+- **Preparation:** a large replaceable coach stage, timer ring, upcoming moves, compact player checks and ready control. The ready action doesn't bypass the 30-second preview.
+- **Battle:** the reference inspired two large opposing feeds and dedicated HUD bands. Full source frames use contain-fit; labels, scores and feedback sit outside the media. The coach and pictogram queue remain visible below the feeds. Laptop-height rules compact secondary chrome. No reference screenshot or copyrighted gameplay art ships.
+- **Results:** a one-time geometric winner reveal, counted-up final scores and personal performance metrics. Next Opponent, Play Again and Leave express intent; the adapter owns continuation policy.
 
-## UX review — October 24, 2026
+## Motion and accessibility
 
-Scope: ui-ux-pro-max accessibility, typography, responsive layout, motion, and gameplay-space checklist. This was a **source-based review**, not a completed visual acceptance pass: the available browser inventory was empty and native app access failed. Vite was started and its local HTTP response verified (200 OK). Screenshots, actual viewport/zoom behavior, hardware camera framing, and a browser walkthrough remain unverified.
+Motion is the sole animation library. Hover/focus responses use 180–220ms; state entries 320ms; number interpolation 180ms; result count-ups 850ms. The searching signal runs only during matchmaking. Winner motion runs once. Both OS reduced motion and the footer toggle disable CSS and Motion effects. Scores expose exact values to assistive technology rather than continuously announcing interpolated digits.
 
-Concrete fixes:
+Semantic buttons, skip link, focused main region on phase changes, `aria-current` round progress, labeled video regions, optional camera consent, status/error announcements and visible keyboard focus remain in place. Player names and labels complement colors. Error/empty/disconnected states retain escape and recovery controls.
 
-- Webcam uses `object-fit: contain` so feet, hands, and edges of the source frame are not cropped. Player identity and status occupy separate header/footer bands instead of covering the image.
-- Countdown is a compact banner above the arena, preserving the camera view while players position themselves.
-- Short desktop viewports reserve a practical 300–430px camera panel; mobile battle panels increased to 320px. These dimensions still require visual acceptance on target devices.
-- Current move has stronger type and coral emphasis. Next-move cues remain present on tablet/mobile rather than disappearing.
-- Metadata is generally at least 12px; explanatory mobile copy is 16px. Narrow navigation wraps, timer layouts can reflow, and progress steps expose `aria-current`.
-- Readiness action appears before the long move list; opponent readiness comes from player state. Completed previews retain the final move instead of returning to the first.
-- Reduced motion prevents the decorative avatar from flipping, not just its CSS transition. Buttons have pressed feedback. Secondary controls have a higher-contrast border token.
-- Camera-off control remains reachable on results/disconnection screens; clearing the camera also clears old permission errors.
-- Removed the unsubstantiated registered-trademark symbol and implementation-oriented stage copy.
+## Responsive approach
 
-Measured token contrasts: Cloud White/Cobalt 4.70:1; Muted Slate/Charcoal 6.83:1; Coral/Surface 5.94:1; control border/Charcoal 3.51:1 (see source tokens for exact values).
+Desktop/laptop gameplay is primary. Compact-height rules preserve media space. At tablet widths, guidance reflows into its own row. At phone widths, the lobby stacks, preparation becomes one column, player identities/scores remain paired, and move cards reflow. Media is never cropped to fill a panel. These CSS rules still require actual viewport acceptance tests.
 
-Production build, TypeScript, and existing demo-flow tests are the automated acceptance checks. No new dependencies were added. Browser verification remains a required follow-up when a browser is connected.
+## Validation status
+
+- Production build, TypeScript check and existing demo controller tests run successfully.
+- `test:render` renders all seven phases, disconnect/error states and an empty choreography state without a browser. It checks page headings, core guidance and absence of invented feedback. **This is not screenshot, layout or browser accessibility testing.**
+- Vite ran locally and returned HTTP 200.
+- The three supplied images and all five downloaded 21st.dev static previews were visually inspected.
+- **Application browser QA is blocked:** available browser inventory was empty and the native UI provider failed to start. No claim is made that desktop/mobile layouts, reduced motion, camera hardware or keyboard behavior were visually verified.
+
+Required follow-up when a browser is available: inspect every phase at 1440×900, 1366×768, 768×1024 and 375×812; check landscape, 200% zoom, keyboard-only flow, OS reduced motion, camera permission denial, full-body framing, real remote tracks and avatar loading.

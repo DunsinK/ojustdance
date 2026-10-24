@@ -19,6 +19,7 @@ test("complete round requires readiness; supports next opponent and rematch", ()
     assert.equal(demo.getSnapshot().phase, "battle");
     demo.skip();
     assert.equal(demo.getSnapshot().phase, "results");
+    assert.ok(demo.getSnapshot().players[0].feedback);
     assert.equal(
       demo.getSnapshot().result.scores.you,
       demo.getSnapshot().players[0].score,
@@ -28,6 +29,7 @@ test("complete round requires readiness; supports next opponent and rematch", ()
     demo.dispatch("next");
     assert.equal(demo.getSnapshot().phase, "searching");
     assert.equal(demo.getSnapshot().players[0].score, 0);
+    assert.equal(demo.getSnapshot().players[0].feedback, undefined);
   } finally {
     demo.dispose();
   }

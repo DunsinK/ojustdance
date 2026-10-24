@@ -14,6 +14,8 @@ export interface Player {
   color: "cobalt" | "coral";
   score: number;
   ready: boolean;
+  /** Optional pose feedback supplied by the scoring adapter; never invented by the UI. */
+  feedback?: { rating: "PERFECT" | "GOOD" | "MISS"; combo: number };
 }
 export interface Landmark {
   x: number;

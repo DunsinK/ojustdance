@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import type { ChoreographyStageProps, VideoPanelProps } from "../types";
-import { Dancer, Star } from "./Brand";
+import { Performer } from "./Performer";
+import { Spark } from "./Brand";
+
 export function VideoPanel({
   player,
   stream,
@@ -18,19 +20,25 @@ export function VideoPanel({
   }, [stream]);
   return (
     <section
-      className={`video-panel ${player.color}`}
+      className={`video-panel ${local ? "local" : "rival"}`}
       aria-label={`${player.name} video`}
     >
-      <div className="panel-top">
-        <span className="player-label">
+      <header className="video-label">
+        <span>
           <i />
-          {player.name}
-          {local && " / P1"}
+          {local ? "YOU" : player.name.toUpperCase()}{" "}
+          <small>{local ? "PLAYER 01" : "PLAYER 02"}</small>
         </span>
-        <span className="tiny">
-          {stream ? "CAMERA ON" : demo ? "DEMO PLAYER" : "WAITING FOR VIDEO"}
+        <span className="video-state">
+          {stream
+            ? local
+              ? "CAMERA ON"
+              : "LIVE VIDEO"
+            : demo
+              ? "DEMO AVATAR"
+              : "CAMERA OFF"}
         </span>
-      </div>
+      </header>
       <div className="video-viewport">
         {stream ? (
           <video
@@ -40,70 +48,101 @@ export function VideoPanel({
             muted={local}
             className={local ? "mirrored" : ""}
           />
-        ) : (
-          <div className="video-placeholder">
-            <Dancer variant={player.color} />
-            <span>
-              {demo
-                ? "Simulated dancer · no live video"
-                : "Video will appear when connected"}
+        ) : demo ? (
+          <div className="demo-scene">
+            <span className="scene-type" aria-hidden="true">
+              {local ? "01" : "02"}
             </span>
+            <div className="scene-floor" />
+            <Performer rival={!local} />
+            <span className="frame-corner top-left" />
+            <span className="frame-corner bottom-right" />
+          </div>
+        ) : (
+          <div className="empty-video">
+            <MoveIconPlaceholder />
+            <strong>
+              {local ? "Your side of the floor" : "Waiting for your opponent"}
+            </strong>
+            <p>
+              {local
+                ? "Enable your camera when you’re ready."
+                : "Their video will appear once connected."}
+            </p>
           </div>
         )}
       </div>
-      <div className="panel-bottom">
+      <div className="video-caption">
         {children ?? (
-          <span>
-            {player.ready
-              ? "✓ Ready to move"
-              : local
-                ? "Your side of the floor"
-                : "A new face. Same rhythm."}
-          </span>
+          <>
+            <span>
+              {demo && !stream
+                ? "Illustrated stand-in · no live video"
+                : local
+                  ? "Keep your whole body in frame"
+                  : "A new face. The same beat."}
+            </span>
+            <span>{player.ready ? "✓ Ready" : "Getting ready"}</span>
+          </>
         )}
       </div>
     </section>
   );
 }
+function MoveIconPlaceholder() {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
+      <rect x="3" y="7" width="19" height="18" rx="4" />
+      <path d="m22 12 7-4v16l-7-4" />
+    </svg>
+  );
+}
+
 export function ChoreographyStage({
   choreography,
   elapsedMs,
   playing,
   loading,
 }: ChoreographyStageProps) {
-  const move = choreography?.moves.filter((m) => elapsedMs >= m.startMs).at(-1);
+  const current = choreography?.moves
+    .filter((m) => elapsedMs >= m.startMs)
+    .at(-1);
   return (
-    <section
-      className={`choreo-stage ${playing ? "playing" : ""}`}
-      aria-label="Choreography preview"
-    >
-      <div className="panel-top">
-        <span className="eyebrow">THE SHARED STAGE</span>
-        <span className="tag">DEMO CHOREOGRAPHY</span>
-      </div>
+    <section className="choreo-stage" aria-label="Choreography target">
+      <header>
+        <span className="eyebrow">YOUR CHOREOGRAPHY</span>
+        <span className="badge">AVATAR PREVIEW</span>
+      </header>
       {loading ? (
-        <div className="stage-message" role="status">
-          Preparing your routine…
+        <div className="stage-empty" role="status">
+          Building your routine…
         </div>
       ) : !choreography ? (
-        <div className="stage-message">
-          No choreography yet. Your routine will appear here.
-        </div>
+        <div className="stage-empty">Waiting for a shared routine.</div>
       ) : (
         <>
-          <div className="stage-orbit" />
-          <Dancer pose={Math.floor(elapsedMs / 5000)} />
-          <Star className="stage-star" />
-          <div className="stage-caption">
-            <span className="tiny">
+          <div className="stage-art">
+            <div className="stage-rings" />
+            <div className="stage-axis" />
+            <Performer coach />
+            <Spark className="stage-spark" />
+          </div>
+          <div className="stage-bottom">
+            <span className="eyebrow">
               {playing
-                ? "FOLLOW THE MOVEMENT"
+                ? "FOLLOW THE COACH"
                 : elapsedMs > 0
                   ? "PREVIEW COMPLETE"
-                  : "YOUR NEXT CHALLENGE"}
+                  : "GET INTO POSITION"}
             </span>
-            <strong>{move?.name ?? "Find your rhythm"}</strong>
-            <span className="muted">Demo routine · watch the move cues</span>
+            <strong>{current?.name ?? "Find your stance"}</strong>
+            <span>Demo illustration · full-body movement</span>
           </div>
         </>
       )}

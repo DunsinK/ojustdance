@@ -8,7 +8,7 @@ import type {
 export const demoDance = {
   id: "demo-neon",
   title: "After Hours",
-  artist: "Shared Beat · demo routine",
+  artist: "ojustdance · demo routine",
   bpm: 120,
   difficulty: "Medium" as const,
   durationMs: 30000,
@@ -86,10 +86,18 @@ export class DemoController implements GameAdapter {
         {
           ...this.state.players[0],
           score: Math.floor((elapsedMs / this.duration) * 9240),
+          feedback: {
+            rating: Math.floor(elapsedMs / 5000) % 3 === 1 ? "GOOD" : "PERFECT",
+            combo: Math.floor(elapsedMs / 1700),
+          },
         },
         {
           ...this.state.players[1],
           score: Math.floor((elapsedMs / this.duration) * 8610),
+          feedback: {
+            rating: Math.floor(elapsedMs / 5000) % 3 === 2 ? "MISS" : "GOOD",
+            combo: Math.floor(elapsedMs / 2100),
+          },
         },
       ];
     this.emit(patch);
