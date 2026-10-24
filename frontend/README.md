@@ -59,7 +59,9 @@ Restart `npm run dev` after changing env vars (Vite only reads them at startup).
 1. Open **/map**
 2. **Enable camera** → **Record** / **Pause** / **Stop** (Stop finalizes WebM preview), or **Import video** (MediaPipe analyzes the file)
 3. Timeline: select / delete clips, close gaps
-4. **Export JSON + video** downloads the chart and preview for later backend upload
+4. **Publish to library** uploads chart JSON + preview video to `POST /charts` (Supabase)
+
+**Solo Battles** (`/solo`) lists published charts from the API (preview UI; scoring later).
 
 Battle page is still UI-only. Shared pose code lives in `src/pose/`.
 

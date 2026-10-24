@@ -5,6 +5,7 @@ import { Battle } from "./pages/Battle";
 import { Charts } from "./pages/Charts";
 import { Home } from "./pages/Home";
 import { Map } from "./pages/Map";
+import { SoloBattles } from "./pages/SoloBattles";
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="battle" element={<Battle />} />
+          <Route path="solo" element={<SoloBattles />} />
           <Route path="map" element={<Map />} />
           <Route path="charts" element={<Charts />} />
           <Route path="api-test" element={<ApiTest />} />

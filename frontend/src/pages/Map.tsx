@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Timeline } from "../components/Timeline";
+import { publishChart } from "../lib/api";
 import { analyzeVideoFile } from "../pose/analyzeVideo";
 import {
   buildChartDocument,
   closeGaps,
-  downloadChartJson,
   timelineDuration,
 } from "../pose/exportChart";
 import {
-  downloadBlob,
   startSessionRecorder,
   videoExtension,
   type SessionRecorder,
@@ -52,6 +52,10 @@ export function Map() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzePct, setAnalyzePct] = useState(0);
   const [captureArmed, setCaptureArmed] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishMessage, setPublishMessage] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishedId, setPublishedId] = useState<string | null>(null);
 
   const transportRef = useRef(transport);
   const playheadRef = useRef(playheadSec);
@@ -317,17 +321,40 @@ export function Map() {
     if (mode === "camera") setPreview(null);
   }
 
-  function exportAll() {
-    const doc = buildChartDocument({
-      segments,
-      title,
-      difficulty,
-      model,
-      sampleRateHz: SAMPLE_HZ,
-    });
-    downloadChartJson(doc);
-    if (previewBlob) {
-      downloadBlob(previewBlob, stampName(title, videoExtension(previewBlob)));
+  async function publishAll() {
+    if (!sampleCount || publishing) return;
+    if (!previewBlob) {
+      setPublishError("Add a preview video (Stop a camera take or Import) before publishing.");
+      return;
+    }
+
+    setPublishing(true);
+    setPublishError(null);
+    setPublishMessage(null);
+    setPublishedId(null);
+
+    try {
+      const doc = buildChartDocument({
+        segments,
+        title,
+        difficulty,
+        model,
+        sampleRateHz: SAMPLE_HZ,
+      });
+      const result = await publishChart({
+        chart: doc,
+        video: previewBlob,
+        title: doc.title,
+        difficulty: doc.difficulty,
+        videoFilename: stampName(doc.title, videoExtension(previewBlob)),
+      });
+      setPublishedId(result.id);
+      setPublishMessage(`Saved “${result.title}” to the library.`);
+    } catch (err) {
+      console.error(err);
+      setPublishError(err instanceof Error ? err.message : "Publish failed");
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -586,17 +613,26 @@ export function Map() {
           </div>
 
           <p className="hint">
-            Export downloads chart JSON and the preview video together — ready to
-            upload to the backend later.
+            Publish sends pose JSON + preview video to the API and stores them in
+            Supabase for Solo Battles.
           </p>
+
+          {publishError && <p className="api-error">{publishError}</p>}
+          {publishMessage && (
+            <p className="hint publish-ok">
+              {publishMessage}{" "}
+              <Link to="/solo">Open Solo Battles</Link>
+              {publishedId ? ` · id ${publishedId.slice(0, 8)}…` : null}
+            </p>
+          )}
 
           <button
             type="button"
             className="btn primary"
-            disabled={!sampleCount}
-            onClick={exportAll}
+            disabled={!sampleCount || publishing}
+            onClick={() => void publishAll()}
           >
-            Export JSON{previewBlob ? " + video" : ""}
+            {publishing ? "Publishing…" : "Publish to library"}
           </button>
         </aside>
       </section>

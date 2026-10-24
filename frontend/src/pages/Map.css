@@ -41,6 +41,14 @@
   object-fit: contain;
 }
 
+.publish-ok {
+  color: #3a7a00;
+}
+
+.publish-ok a {
+  text-decoration: underline;
+}
+
 .transport {
   display: flex;
   flex-wrap: wrap;

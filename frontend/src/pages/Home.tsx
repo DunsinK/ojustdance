@@ -15,6 +15,9 @@ export function Home() {
           <Link to="/battle" className="btn primary">
             Find a battle
           </Link>
+          <Link to="/solo" className="btn ghost">
+            Solo battles
+          </Link>
           <Link to="/map" className="btn ghost">
             Map a chart
           </Link>

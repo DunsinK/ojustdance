@@ -62,14 +62,27 @@ PORT=4000 node server.js
 
 ## Env
 
-Copy `.env.example` → `.env` if needed:
+Copy `.env.example` → `.env`:
 
 ```
 PORT=3001
 FRONTEND_ORIGIN=http://localhost:5173
+SUPABASE_URL=https://....supabase.co
+SUPABASE_SECRET_KEY=...
+SUPABASE_DIRECT_CONNECTION_KEY=postgresql://postgres:PASSWORD@db....supabase.co:5432/postgres
 ```
 
-`FRONTEND_ORIGIN` is used for CORS so the Vite app can call this API.
+On boot the API tries to create the `charts` table via `SUPABASE_DIRECT_CONNECTION_KEY`. If that fails (VPN/DNS), run `sql/init.sql` in the Supabase SQL editor once.
+
+Chart reads/writes use the Supabase API (`SUPABASE_URL` + `SUPABASE_SECRET_KEY`). Videos go to the `chart-videos` storage bucket (created automatically if missing). Make the bucket **public** (or adjust RLS) so Solo Battles can play previews.
+
+## Chart API
+
+| Method | Path | Body |
+|--------|------|------|
+| `GET` | `/charts` | list charts |
+| `GET` | `/charts/:id` | one chart (+ full JSON) |
+| `POST` | `/charts` | `multipart/form-data`: `chart` (JSON string) + `video` (file) |
 
 ## Notes
 
