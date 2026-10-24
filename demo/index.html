@@ -21,6 +21,7 @@
 
       <div class="controls">
         <button id="startBtn" type="button">Start</button>
+        <button id="mapBtn" type="button" class="map" disabled>Map</button>
         <label class="field">
           Model
           <select id="modelSelect">
@@ -35,7 +36,16 @@
         <div><dt>FPS</dt><dd id="fps">—</dd></div>
         <div><dt>Landmarks</dt><dd id="landmarkCount">—</dd></div>
         <div><dt>Latency</dt><dd id="latency">—</dd></div>
+        <div><dt>Map</dt><dd id="mapTime">—</dd></div>
       </dl>
+
+      <section id="outputPanel" class="output hidden">
+        <div class="output-head">
+          <h2>Pose map JSON</h2>
+          <button id="copyBtn" type="button" class="ghost">Copy</button>
+        </div>
+        <pre id="jsonOut"></pre>
+      </section>
     </main>
 
     <script type="module" src="main.js"></script>

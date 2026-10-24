@@ -105,6 +105,35 @@ button:disabled {
   cursor: not-allowed;
 }
 
+button.map {
+  background: #f0b429;
+  color: #1a1200;
+}
+
+button.map.recording {
+  background: var(--danger);
+  color: #fff;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+  padding: 0.45rem 0.8rem;
+  font-weight: 600;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
 .field {
   display: grid;
   gap: 0.35rem;
@@ -123,9 +152,48 @@ select {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
   margin: 1rem 0 0;
+}
+
+.output {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(18, 24, 33, 0.8);
+  overflow: hidden;
+}
+
+.output.hidden {
+  display: none;
+}
+
+.output-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.output-head h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+#jsonOut {
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  padding: 1rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #c9d6e8;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .stats > div {
@@ -147,8 +215,8 @@ dd {
   font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 720px) {
   .stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
