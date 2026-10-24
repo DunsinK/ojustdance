@@ -32,7 +32,7 @@ Routes:
 |------|------|
 | `/` | Home |
 | `/battle` | Battle queue / mock match |
-| `/map` | Chart mapper shell |
+| `/map` | Pose mapper (MediaPipe + timeline editor) |
 | `/charts` | Chart list (placeholder) |
 
 ## Other scripts
@@ -53,6 +53,15 @@ VITE_API_URL=http://localhost:3001
 ```
 
 Restart `npm run dev` after changing env vars (Vite only reads them at startup).
+
+## Map (pose + timeline)
+
+1. Open **/map** → **Enable camera**
+2. **Record** / **Pause** to capture clips on the timeline
+3. Click a clip to select → **Delete clip**; **Close gaps** packs takes together
+4. **Export JSON** for a chart file (~15 Hz relative landmarks)
+
+Battle page is still UI-only (no MediaPipe yet). Shared pose code lives in `src/pose/` for reuse later.
 
 ## API smoke test
 
