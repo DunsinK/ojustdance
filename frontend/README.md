@@ -62,9 +62,9 @@ Restart `npm run dev` after changing env vars (Vite only reads them at startup).
 3. Timeline: select / delete clips, close gaps
 4. **Publish to library** uploads chart JSON + preview video to `POST /charts` (Supabase)
 
-**Solo Battles** (`/solo`) lists published charts from the API (preview UI; scoring later).
+**Solo Battles** (`/solo`) lists charts, then runs `LiveChartMatch`: reference video + live camera, pose graded against chart samples with a live score. Same component is meant for future P2P battles (`mode="battle"`).
 
-Battle page is still UI-only. Shared pose code lives in `src/pose/`.
+Grading helpers: `src/pose/gradePose.ts`. Shared pose stack: `src/pose/`.
 
 ## API smoke test
 

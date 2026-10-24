@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchCharts, type ChartSummary } from "../lib/api";
+import {
+  LiveChartMatch,
+  type LiveMatchResult,
+} from "../components/LiveChartMatch";
+import { fetchChart, fetchCharts, type ChartSummary } from "../lib/api";
+import { parseChartDocument } from "../pose/parseChart";
+import type { ChartDocument } from "../pose/types";
 import "./SoloBattles.css";
 import "./pages.css";
 
@@ -11,11 +17,18 @@ function formatDuration(sec: number | null) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+type Phase = "browse" | "loading" | "play";
+
 export function SoloBattles() {
   const [charts, setCharts] = useState<ChartSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [phase, setPhase] = useState<Phase>("browse");
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [activeChart, setActiveChart] = useState<ChartDocument | null>(null);
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+  const [lastResult, setLastResult] = useState<LiveMatchResult | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,13 +56,53 @@ export function SoloBattles() {
 
   const selected = charts.find((c) => c.id === selectedId) ?? null;
 
+  async function startSolo() {
+    if (!selectedId) return;
+    setPhase("loading");
+    setLoadError(null);
+    setLastResult(null);
+    try {
+      const detail = await fetchChart(selectedId);
+      const doc = parseChartDocument(detail.chartJson);
+      if (detail.title) doc.title = detail.title;
+      setActiveChart(doc);
+      setActiveVideoUrl(detail.videoUrl);
+      setPhase("play");
+    } catch (err) {
+      console.error(err);
+      setLoadError(err instanceof Error ? err.message : "Could not start chart");
+      setPhase("browse");
+    }
+  }
+
+  function exitMatch() {
+    setPhase("browse");
+    setActiveChart(null);
+    setActiveVideoUrl(null);
+  }
+
+  if (phase === "play" && activeChart) {
+    return (
+      <main className="page solo-page">
+        <LiveChartMatch
+          mode="solo"
+          chart={activeChart}
+          videoUrl={activeVideoUrl}
+          title={activeChart.title}
+          onExit={exitMatch}
+          onComplete={setLastResult}
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="page solo-page">
       <header className="page-head">
         <h1>Solo Battles</h1>
         <p>
-          Practice against community maps from the library. Full scoring comes
-          later — browse and preview for now.
+          Pick a mapped chart, dance along on camera, and watch your score climb
+          when you match the moves.
         </p>
       </header>
 
@@ -57,6 +110,15 @@ export function SoloBattles() {
       {error && (
         <p className="api-error">
           {error} — is the API running on :3001?
+        </p>
+      )}
+      {loadError && <p className="api-error">{loadError}</p>}
+
+      {lastResult && phase === "browse" && (
+        <p className="solo-last-result">
+          Last run: {lastResult.score.toLocaleString()} pts · max combo{" "}
+          {lastResult.maxCombo} · {Math.round(lastResult.avgAccuracy * 100)}%
+          match
         </p>
       )}
 
@@ -112,8 +174,13 @@ export function SoloBattles() {
                 )}
 
                 <div className="page-actions">
-                  <button type="button" className="btn primary" disabled>
-                    Start solo (soon)
+                  <button
+                    type="button"
+                    className="btn primary"
+                    disabled={phase === "loading"}
+                    onClick={() => void startSolo()}
+                  >
+                    {phase === "loading" ? "Loading…" : "Start solo"}
                   </button>
                   <Link to="/map" className="btn ghost">
                     Map another

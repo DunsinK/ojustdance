@@ -37,6 +37,10 @@ export type PublishChartResult = {
   createdAt: string;
 };
 
+export type ChartDetail = ChartSummary & {
+  chartJson: unknown;
+};
+
 export async function fetchHealth(): Promise<HealthResponse> {
   const res = await fetch(`${getApiUrl()}/health`);
   if (!res.ok) {
@@ -53,6 +57,15 @@ export async function fetchCharts(): Promise<ChartSummary[]> {
   }
   const data = (await res.json()) as { charts: ChartSummary[] };
   return data.charts ?? [];
+}
+
+export async function fetchChart(id: string): Promise<ChartDetail> {
+  const res = await fetch(`${getApiUrl()}/charts/${id}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Failed to load chart (${res.status})`);
+  }
+  return res.json() as Promise<ChartDetail>;
 }
 
 export async function publishChart(opts: {
