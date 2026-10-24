@@ -16,6 +16,31 @@
   place-items: center;
 }
 
+.map-source-pick {
+  gap: 0.75rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.preview-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.preview-block h3 {
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.preview-video {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #0c1018;
+  max-height: 180px;
+  object-fit: contain;
+}
+
 .transport {
   display: flex;
   flex-wrap: wrap;

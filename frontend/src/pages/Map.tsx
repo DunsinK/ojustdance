@@ -1,14 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { Timeline } from "../components/Timeline";
+import { analyzeVideoFile } from "../pose/analyzeVideo";
 import {
   buildChartDocument,
   closeGaps,
   downloadChartJson,
   timelineDuration,
 } from "../pose/exportChart";
+import {
+  downloadBlob,
+  startSessionRecorder,
+  videoExtension,
+  type SessionRecorder,
+} from "../pose/mediaRecord";
 import { PoseStage } from "../pose/PoseStage";
 import type { ModelKey, TimelineSegment } from "../pose/types";
-import { usePoseCamera } from "../pose/usePoseCamera";
+import { usePoseSource, type PoseSourceMode } from "../pose/usePoseSource";
 import "./Map.css";
 import "./pages.css";
 
@@ -21,8 +28,17 @@ function newId() {
   return crypto.randomUUID();
 }
 
+function stampName(title: string, ext: string) {
+  const safe = (title || "chart").replace(/[^\w.-]+/g, "-").slice(0, 40);
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  return `${safe}-${stamp}.${ext}`;
+}
+
 export function Map() {
+  const [mode, setMode] = useState<PoseSourceMode>("camera");
   const [cameraOn, setCameraOn] = useState(false);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [transport, setTransport] = useState<Transport>("idle");
   const [segments, setSegments] = useState<TimelineSegment[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -31,6 +47,11 @@ export function Map() {
   const [difficulty, setDifficulty] =
     useState<"easy" | "normal" | "hard">("easy");
   const [model, setModel] = useState<ModelKey>("lite");
+  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzePct, setAnalyzePct] = useState(0);
+  const [captureArmed, setCaptureArmed] = useState(false);
 
   const transportRef = useRef(transport);
   const playheadRef = useRef(playheadSec);
@@ -39,15 +60,33 @@ export function Map() {
   const segmentOriginRef = useRef(0);
   const lastSampleAtRef = useRef(0);
   const clockRafRef = useRef(0);
+  const sessionRecorderRef = useRef<SessionRecorder | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const analyzeAbortRef = useRef<AbortController | null>(null);
 
   transportRef.current = transport;
   playheadRef.current = playheadSec;
 
-  const { videoRef, canvasRef, ready, error, fps, hasPose } = usePoseCamera({
+  const {
+    videoRef,
+    canvasRef,
+    landmarkerRef,
+    streamRef,
+    ready,
+    error,
+    fps,
+    hasPose,
+    mirror,
+  } = usePoseSource({
+    mode,
     enabled: cameraOn,
+    fileUrl,
     model,
+    liveDetect: !analyzing,
     onFrame: (frame) => {
       if (transportRef.current !== "recording" || !frame.hasPose) return;
+      if (mode === "file") return; // file clips come from analyze / optional live later
+
       const now = performance.now();
       if (now - lastSampleAtRef.current < SAMPLE_INTERVAL_MS) return;
       lastSampleAtRef.current = now;
@@ -76,7 +115,15 @@ export function Map() {
   });
 
   useEffect(() => {
-    if (transport !== "recording") {
+    return () => {
+      if (fileUrl) URL.revokeObjectURL(fileUrl);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      analyzeAbortRef.current?.abort();
+    };
+  }, [fileUrl, previewUrl]);
+
+  useEffect(() => {
+    if (transport !== "recording" || mode !== "camera") {
       cancelAnimationFrame(clockRafRef.current);
       return;
     }
@@ -90,9 +137,110 @@ export function Map() {
     };
     clockRafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(clockRafRef.current);
-  }, [transport]);
+  }, [transport, mode]);
 
-  function startRecording() {
+  function setPreview(blob: Blob | null) {
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return blob ? URL.createObjectURL(blob) : null;
+    });
+    setPreviewBlob(blob);
+  }
+
+  function enableCamera() {
+    analyzeAbortRef.current?.abort();
+    if (fileUrl) {
+      URL.revokeObjectURL(fileUrl);
+      setFileUrl(null);
+    }
+    setFileName(null);
+    setMode("camera");
+    setCameraOn(true);
+    setTransport("idle");
+  }
+
+  async function onImportFile(file: File) {
+    analyzeAbortRef.current?.abort();
+    setCameraOn(false);
+    setTransport("idle");
+    setSegments([]);
+    setSelectedId(null);
+    setPlayheadSec(0);
+    setPreview(null);
+
+    if (fileUrl) URL.revokeObjectURL(fileUrl);
+    const url = URL.createObjectURL(file);
+    setFileUrl(url);
+    setFileName(file.name);
+    setMode("file");
+    setTitle((t) => t || file.name.replace(/\.[^.]+$/, ""));
+    setPreview(file);
+
+    // Analyze runs after landmarker is ready (see effect below via analyzing trigger)
+    setAnalyzing(true);
+    setAnalyzePct(0);
+  }
+
+  useEffect(() => {
+    if (mode !== "file" || !analyzing || !ready || !fileUrl) return;
+
+    const video = videoRef.current;
+    const landmarker = landmarkerRef.current;
+    if (!video || !landmarker) return;
+
+    const ac = new AbortController();
+    analyzeAbortRef.current = ac;
+
+    (async () => {
+      try {
+        video.pause();
+        const samples = await analyzeVideoFile({
+          video,
+          landmarker,
+          canvas: canvasRef.current,
+          sampleHz: SAMPLE_HZ,
+          signal: ac.signal,
+          onProgress: ({ t, duration }) => {
+            setAnalyzePct(duration ? Math.round((t / duration) * 100) : 0);
+          },
+        });
+
+        if (ac.signal.aborted) return;
+
+        const endSec = samples.length
+          ? samples[samples.length - 1].t
+          : video.duration || 0;
+        const id = newId();
+        setSegments([
+          {
+            id,
+            startSec: 0,
+            endSec,
+            samples,
+          },
+        ]);
+        setSelectedId(id);
+        setPlayheadSec(0);
+        await video.play().catch(() => undefined);
+      } catch (err) {
+        if (!ac.signal.aborted) {
+          console.error(err);
+          alert(err instanceof Error ? err.message : "Video analysis failed");
+        }
+      } finally {
+        if (!ac.signal.aborted) {
+          setAnalyzing(false);
+          setAnalyzePct(0);
+        }
+      }
+    })();
+
+    return () => ac.abort();
+  }, [mode, analyzing, ready, fileUrl]);
+
+  async function startRecording() {
+    if (mode !== "camera" || !ready) return;
+
     const startAt = playheadRef.current;
     const id = newId();
     activeSegIdRef.current = id;
@@ -106,16 +254,45 @@ export function Map() {
     ]);
     setSelectedId(id);
     setTransport("recording");
+
+    try {
+      const stream = streamRef.current;
+      if (!stream) throw new Error("No camera stream to record");
+
+      if (!sessionRecorderRef.current) {
+        sessionRecorderRef.current = startSessionRecorder(stream);
+        setCaptureArmed(true);
+      } else {
+        sessionRecorderRef.current.resume();
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Could not start video capture");
+      setTransport("idle");
+      activeSegIdRef.current = null;
+    }
   }
 
   function pauseRecording() {
     setTransport("paused");
     activeSegIdRef.current = null;
+    sessionRecorderRef.current?.pause();
   }
 
-  function stopSession() {
+  async function stopSession() {
     setTransport("idle");
     activeSegIdRef.current = null;
+    const recorder = sessionRecorderRef.current;
+    sessionRecorderRef.current = null;
+    setCaptureArmed(false);
+    if (recorder) {
+      try {
+        const blob = await recorder.stop();
+        if (blob.size > 0) setPreview(blob);
+      } catch (err) {
+        console.error(err);
+      }
+    }
   }
 
   function deleteSelected() {
@@ -137,9 +314,10 @@ export function Map() {
     setSelectedId(null);
     setPlayheadSec(0);
     setTransport("idle");
+    if (mode === "camera") setPreview(null);
   }
 
-  function exportJson() {
+  function exportAll() {
     const doc = buildChartDocument({
       segments,
       title,
@@ -148,17 +326,26 @@ export function Map() {
       sampleRateHz: SAMPLE_HZ,
     });
     downloadChartJson(doc);
+    if (previewBlob) {
+      downloadBlob(previewBlob, stampName(title, videoExtension(previewBlob)));
+    }
   }
 
   const duration = timelineDuration(segments);
   const sampleCount = segments.reduce((n, s) => n + s.samples.length, 0);
   const selected = segments.find((s) => s.id === selectedId);
+  const stageActive = mode === "camera" ? cameraOn : Boolean(fileUrl);
 
-  let status = "Enable camera to start mapping";
+  let status = "Enable camera or import a video";
   if (error) status = error;
-  else if (cameraOn && !ready) status = "Loading MediaPipe…";
+  else if (analyzing) status = `Analyzing video… ${analyzePct}%`;
+  else if (stageActive && !ready) status = "Loading MediaPipe…";
   else if (ready && transport === "recording")
-    status = hasPose ? "Recording pose" : "Recording — no body in frame";
+    status = hasPose ? "Recording pose + video" : "Recording — no body in frame";
+  else if (ready && mode === "file")
+    status = hasPose
+      ? `Imported · tracking ${fps} FPS`
+      : `Imported${fileName ? `: ${fileName}` : ""}`;
   else if (ready) status = hasPose ? `Tracking · ${fps} FPS` : "Step into frame";
 
   return (
@@ -166,63 +353,123 @@ export function Map() {
       <header className="page-head">
         <h1>Map</h1>
         <p>
-          Record pose clips on a timeline — pause, scrub, delete takes, then
-          export a chart.
+          Record or import a dance — pose JSON plus a preview video for the chart
+          library.
         </p>
       </header>
 
       <section className="map-editor">
         <div className="map-stage-col">
-          {!cameraOn ? (
-            <div className="cam-slot tall map-cam-placeholder">
+          {!stageActive ? (
+            <div className="cam-slot tall map-cam-placeholder map-source-pick">
               <button
                 type="button"
                 className="btn primary"
-                onClick={() => setCameraOn(true)}
+                onClick={enableCamera}
               >
                 Enable camera
               </button>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Import video
+              </button>
+              <p className="meta-sub">
+                Import runs MediaPipe across the file and uses it as the preview.
+              </p>
             </div>
           ) : (
             <PoseStage
               videoRef={videoRef}
               canvasRef={canvasRef}
+              mirror={mirror}
               status={status}
               recording={transport === "recording"}
             />
           )}
 
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="video/*"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void onImportFile(file);
+            }}
+          />
+
           <div className="transport">
-            {transport !== "recording" ? (
+            {mode === "camera" && (
+              <>
+                {transport !== "recording" ? (
+                  <button
+                    type="button"
+                    className="btn primary"
+                    disabled={!ready || analyzing}
+                    onClick={() => void startRecording()}
+                  >
+                    Record
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn danger"
+                    onClick={pauseRecording}
+                  >
+                    Pause
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={!captureArmed && transport === "idle"}
+                  onClick={() => void stopSession()}
+                >
+                  Stop
+                </button>
+              </>
+            )}
+
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={analyzing || transport === "recording"}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Import video
+            </button>
+
+            {mode === "file" && (
               <button
                 type="button"
-                className="btn primary"
-                disabled={!ready}
-                onClick={startRecording}
+                className="btn ghost"
+                disabled={analyzing || !ready}
+                onClick={() => {
+                  setAnalyzing(true);
+                  setAnalyzePct(0);
+                }}
               >
-                Record
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn danger"
-                onClick={pauseRecording}
-              >
-                Pause
+                Re-analyze
               </button>
             )}
+
             <button
               type="button"
               className="btn ghost"
-              disabled={transport === "idle" && !segments.length}
-              onClick={stopSession}
+              disabled={!cameraOn && mode === "camera"}
+              onClick={enableCamera}
             >
-              Stop
+              Use camera
             </button>
+
             <button
               type="button"
               className="btn ghost"
-              disabled={!selectedId || transport === "recording"}
+              disabled={!selectedId || transport === "recording" || analyzing}
               onClick={deleteSelected}
             >
               Delete clip
@@ -230,7 +477,7 @@ export function Map() {
             <button
               type="button"
               className="btn ghost"
-              disabled={!segments.length || transport === "recording"}
+              disabled={!segments.length || transport === "recording" || analyzing}
               onClick={handleCloseGaps}
             >
               Close gaps
@@ -238,7 +485,7 @@ export function Map() {
             <button
               type="button"
               className="btn ghost"
-              disabled={!segments.length || transport === "recording"}
+              disabled={!segments.length || transport === "recording" || analyzing}
               onClick={clearAll}
             >
               Clear
@@ -248,12 +495,15 @@ export function Map() {
           <Timeline
             segments={segments}
             playheadSec={playheadSec}
-            durationSec={duration}
+            durationSec={Math.max(duration, mode === "file" ? playheadSec : 0)}
             selectedId={selectedId}
             onSelect={setSelectedId}
             onScrub={(sec) => {
-              if (transport === "recording") return;
+              if (transport === "recording" || analyzing) return;
               setPlayheadSec(sec);
+              if (mode === "file" && videoRef.current) {
+                videoRef.current.currentTime = sec;
+              }
             }}
           />
         </div>
@@ -286,7 +536,7 @@ export function Map() {
             Model
             <select
               value={model}
-              disabled={cameraOn}
+              disabled={stageActive}
               onChange={(e) => setModel(e.target.value as ModelKey)}
             >
               <option value="lite">Lite (fast)</option>
@@ -317,19 +567,36 @@ export function Map() {
             </p>
           )}
 
+          <div className="preview-block">
+            <h3>Preview video</h3>
+            {previewUrl ? (
+              <video
+                className="preview-video"
+                src={previewUrl}
+                controls
+                playsInline
+                muted
+              />
+            ) : (
+              <p className="hint">
+                Record a take (Stop finalizes capture) or import a file to attach
+                a preview for the charts library.
+              </p>
+            )}
+          </div>
+
           <p className="hint">
-            CapCut-lite: Record creates a clip at the playhead, Pause ends it,
-            click a clip to select, Delete removes it. Close gaps packs clips
-            back-to-back.
+            Export downloads chart JSON and the preview video together — ready to
+            upload to the backend later.
           </p>
 
           <button
             type="button"
             className="btn primary"
             disabled={!sampleCount}
-            onClick={exportJson}
+            onClick={exportAll}
           >
-            Export JSON
+            Export JSON{previewBlob ? " + video" : ""}
           </button>
         </aside>
       </section>
