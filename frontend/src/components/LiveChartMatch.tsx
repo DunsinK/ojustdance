@@ -49,6 +49,8 @@ export function LiveChartMatch({
   const [tick, setTick] = useState<ScoreTick>(INITIAL_TICK);
   const [accuracy, setAccuracy] = useState(0);
   const [finalAvg, setFinalAvg] = useState(0);
+  /** Chart preview is often opposite the mirrored live cam — default flip on. */
+  const [mirrorChart, setMirrorChart] = useState(true);
 
   const liveLandmarksRef = useRef<RelativeLandmark[]>([]);
   const hasPoseRef = useRef(false);
@@ -234,11 +236,25 @@ export function LiveChartMatch({
 
       <div className="live-match-stages">
         <div className="live-pane">
-          <p className="live-pane-label">Chart</p>
+          <div className="live-pane-bar">
+            <p className="live-pane-label">Chart</p>
+            {videoUrl && (
+              <label className="live-mirror-toggle">
+                <input
+                  type="checkbox"
+                  checked={mirrorChart}
+                  onChange={(e) => setMirrorChart(e.target.checked)}
+                />
+                Mirror video
+              </label>
+            )}
+          </div>
           {videoUrl ? (
             <video
               ref={refVideoRef}
-              className="live-ref-video"
+              className={
+                mirrorChart ? "live-ref-video mirrored" : "live-ref-video"
+              }
               src={videoUrl}
               playsInline
               muted
