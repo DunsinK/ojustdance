@@ -72,9 +72,22 @@ SUPABASE_SECRET_KEY=...
 SUPABASE_DIRECT_CONNECTION_KEY=postgresql://postgres:PASSWORD@db....supabase.co:5432/postgres
 ```
 
-On boot the API tries to create the `charts` table via `SUPABASE_DIRECT_CONNECTION_KEY`. If that fails (VPN/DNS), run `sql/init.sql` in the Supabase SQL editor once.
+### Create the `charts` table (required once)
 
-Chart reads/writes use the Supabase API (`SUPABASE_URL` + `SUPABASE_SECRET_KEY`). Videos go to the `chart-videos` storage bucket (created automatically if missing). Make the bucket **public** (or adjust RLS) so Solo Battles can play previews.
+1. Open [Supabase Dashboard](https://supabase.com/dashboard) → your project  
+2. Left sidebar → **SQL Editor** → **New query**  
+3. Paste everything from `backend/sql/init.sql` and click **Run**  
+4. Confirm under **Table Editor** that `charts` exists  
+
+(Optional) If direct Postgres works, the API also tries to create the table on boot.
+
+### Storage / upload size
+
+Default max video is **500 MB** (Multer + `chart-videos` bucket). Override with `MAX_VIDEO_UPLOAD_MB` in `.env`.
+
+The bucket is created on first publish (public). Also check **Project Settings → Storage** global file size limit is ≥ that value.
+
+Chart reads/writes use the Supabase API (`SUPABASE_URL` + `SUPABASE_SECRET_KEY`).
 
 ## Chart API
 

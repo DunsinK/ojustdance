@@ -17,6 +17,12 @@ export function getSupabase() {
   return client;
 }
 
+const bucketOptions = {
+  public: true,
+  fileSizeLimit: config.maxVideoBytes,
+  allowedMimeTypes: ["video/webm", "video/mp4", "video/quicktime"],
+};
+
 export async function ensureChartBucket() {
   const supabase = getSupabase();
   const bucket = config.storageBucket;
@@ -25,12 +31,21 @@ export async function ensureChartBucket() {
 
   const exists = buckets?.some((b) => b.name === bucket);
   if (!exists) {
-    const { error } = await supabase.storage.createBucket(bucket, {
-      public: true,
-      fileSizeLimit: 100 * 1024 * 1024,
-      allowedMimeTypes: ["video/webm", "video/mp4", "video/quicktime", "video/*"],
-    });
+    const { error } = await supabase.storage.createBucket(bucket, bucketOptions);
     if (error && !/already exists/i.test(error.message)) throw error;
+    console.log(
+      `Created storage bucket "${bucket}" (max ${config.maxVideoBytes / (1024 * 1024)} MB)`
+    );
+    return;
+  }
+
+  const { error } = await supabase.storage.updateBucket(bucket, bucketOptions);
+  if (error) {
+    console.warn(`Could not update bucket "${bucket}" limits:`, error.message);
+  } else {
+    console.log(
+      `Storage bucket "${bucket}" ready (max ${config.maxVideoBytes / (1024 * 1024)} MB)`
+    );
   }
 }
 

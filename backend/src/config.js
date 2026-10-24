@@ -15,6 +15,9 @@ export function normalizeDatabaseUrl(raw) {
   return url;
 }
 
+/** Default 500 MB — override with MAX_VIDEO_UPLOAD_MB in .env */
+const maxVideoMb = Number(env("MAX_VIDEO_UPLOAD_MB", "500"));
+
 export const config = {
   port: Number(env("PORT", "3001")),
   frontendOrigin: env("FRONTEND_ORIGIN", "http://localhost:5173"),
@@ -22,4 +25,5 @@ export const config = {
   supabaseSecretKey: env("SUPABASE_SECRET_KEY") || env("SUPABASE_SERVICE_ROLE_KEY"),
   databaseUrl: normalizeDatabaseUrl(env("SUPABASE_DIRECT_CONNECTION_KEY")),
   storageBucket: env("SUPABASE_CHART_BUCKET", "chart-videos"),
+  maxVideoBytes: Math.max(1, maxVideoMb) * 1024 * 1024,
 };

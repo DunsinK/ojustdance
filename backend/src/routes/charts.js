@@ -1,11 +1,12 @@
 import { Router } from "express";
 import multer from "multer";
 import { getChartById, insertChart, listCharts } from "../chartsStore.js";
+import { config } from "../config.js";
 import { ensureChartBucket, uploadChartVideo } from "../supabase.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 100 * 1024 * 1024 },
+  limits: { fileSize: config.maxVideoBytes },
 });
 
 export const chartsRouter = Router();
