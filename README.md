@@ -80,8 +80,15 @@ ojustdance/
   demo/       # Local MediaPipe pose + Map → JSON smoke test
   frontend/   # React + Vite app (battle UI, mapper, grading)
   backend/    # Express matchmaking + WebSocket + settle API
+  shared/
+    skeleton/ # Shared canonical types, topology, adapters, geometry, and depth contracts
   README.md   # This file
 ```
+
+The canonical skeleton is the private local package `@ojustdance/skeleton`, shared
+across browser and Node consumers. Its [README](shared/skeleton/README.md) explains
+the data flow, folder structure, contracts, and independent build/tests. The
+frontend includes a separate fixture viewer at `/skeleton-debug`.
 
 ## Chart data (from mapping)
 
