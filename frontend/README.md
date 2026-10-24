@@ -4,7 +4,7 @@ React Router UI for home, battle, map, and charts. Pose tracking and live API ca
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 22.12+
 
 ## Setup (once)
 
@@ -34,6 +34,7 @@ Routes:
 | `/battle` | Battle queue / mock match |
 | `/map` | Pose mapper (MediaPipe + timeline editor) |
 | `/charts` | Chart list (placeholder) |
+| `/skeleton-debug` | Canonical skeleton fixtures and joint validity |
 
 ## Other scripts
 
@@ -72,3 +73,12 @@ Battle page is still UI-only (no MediaPipe yet). Shared pose code lives in `src/
 ## Notes
 
 - Dev server defaults to port **5173**. If something else is using it (e.g. the MediaPipe `demo`), Vite will pick the next free port — check the terminal output.
+
+## Canonical skeleton debug view
+
+The shared skeleton package lives in [`../shared/skeleton`](../shared/skeleton/README.md),
+outside the frontend. The app imports it as `@ojustdance/skeleton`; development
+loads its source directly and production builds its JavaScript automatically.
+Run `npm test` for its deterministic tests. With `npm run dev`, open
+`/skeleton-debug` for fixtures, joint labels, validity, and explicit transforms.
+Use Node 22.12+ for the existing Vite toolchain.

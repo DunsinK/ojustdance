@@ -5,11 +5,13 @@ import { Battle } from "./pages/Battle";
 import { Charts } from "./pages/Charts";
 import { Home } from "./pages/Home";
 import { Map } from "./pages/Map";
+import { SkeletonDebug } from "./pages/SkeletonDebug";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="skeleton-debug" element={<SkeletonDebug />} />
         <Route element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="battle" element={<Battle />} />
