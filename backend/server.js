@@ -1,11 +1,14 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
+import { createServer } from "http";
 import { config } from "./src/config.js";
 import { ensureChartsTable } from "./src/db.js";
+import { attachRealtime } from "./src/realtime/index.js";
 import { chartsRouter } from "./src/routes/charts.js";
 
 const app = express();
+const httpServer = createServer(app);
 
 app.use(
   cors({
@@ -20,10 +23,13 @@ app.get("/health", (_req, res) => {
     service: "ojustdance-api",
     time: new Date().toISOString(),
     supabaseConfigured: Boolean(config.supabaseUrl && config.databaseUrl),
+    realtime: "socket.io",
   });
 });
 
 app.use("/charts", chartsRouter);
+
+attachRealtime(httpServer);
 
 async function boot() {
   try {
@@ -36,9 +42,9 @@ async function boot() {
     );
   }
 
-  app.listen(config.port, () => {
+  httpServer.listen(config.port, () => {
     console.log(`API on http://localhost:${config.port}`);
-    console.log(`CORS origin: ${config.frontendOrigin}`);
+    console.log(`Socket.io ready (CORS ${config.frontendOrigin})`);
   });
 }
 

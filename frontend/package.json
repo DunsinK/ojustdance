@@ -14,10 +14,11 @@
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.1.1",
+    "@ojustdance/skeleton": "file:../shared/skeleton",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.4",
-    "@ojustdance/skeleton": "file:../shared/skeleton"
+    "socket.io-client": "^4.8.4"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",

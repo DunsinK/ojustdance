@@ -1,99 +1,250 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  LiveChartMatch,
+  type LiveMatchResult,
+} from "../components/LiveChartMatch";
+import { parseChartDocument } from "../pose/parseChart";
+import type { ChartDocument } from "../pose/types";
+import {
+  connectSocket,
+  disconnectSocket,
+  type MatchFoundPayload,
+  type MatchResultPayload,
+} from "../lib/socket";
 import "./pages.css";
+import "./Battle.css";
 
-type Phase = "idle" | "searching" | "live" | "result";
+type Phase = "idle" | "searching" | "matched" | "live" | "result";
 
 export function Battle() {
   const [phase, setPhase] = useState<Phase>("idle");
+  const [name, setName] = useState("Dancer");
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [match, setMatch] = useState<MatchFoundPayload | null>(null);
+  const [chart, setChart] = useState<ChartDocument | null>(null);
+  const [startToken, setStartToken] = useState<number | undefined>(undefined);
+  const [rivalScore, setRivalScore] = useState(0);
+  const [result, setResult] = useState<MatchResultPayload | null>(null);
+  const matchIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const socket = connectSocket();
+
+    const onWaiting = () => {
+      setPhase("searching");
+      setStatusMsg("In queue — waiting for a rival…");
+    };
+
+    const onFound = (payload: MatchFoundPayload) => {
+      try {
+        const doc = parseChartDocument(payload.chart.chartJson);
+        doc.title = payload.chart.title || doc.title;
+        matchIdRef.current = payload.matchId;
+        setMatch(payload);
+        setChart(doc);
+        setRivalScore(0);
+        setResult(null);
+        setPhase("matched");
+        setStatusMsg(`Matched with ${payload.rival.name} — get ready`);
+        socket.emit("match:ready", { matchId: payload.matchId });
+      } catch (err) {
+        console.error(err);
+        setError(err instanceof Error ? err.message : "Bad chart payload");
+        setPhase("idle");
+      }
+    };
+
+    const onStart = () => {
+      setPhase("live");
+      setStatusMsg(null);
+      setStartToken(Date.now());
+    };
+
+    const onRivalScore = (payload: { score: number }) => {
+      setRivalScore(payload.score ?? 0);
+    };
+
+    const onResult = (payload: MatchResultPayload) => {
+      setResult(payload);
+      setPhase("result");
+      setStatusMsg(null);
+      matchIdRef.current = null;
+    };
+
+    const onRivalLeft = () => {
+      setStatusMsg("Rival left the match");
+    };
+
+    const onErr = (payload: { message?: string }) => {
+      setError(payload.message || "Socket error");
+      setPhase("idle");
+    };
+
+    socket.on("queue:waiting", onWaiting);
+    socket.on("match:found", onFound);
+    socket.on("match:start", onStart);
+    socket.on("match:rivalScore", onRivalScore);
+    socket.on("match:result", onResult);
+    socket.on("match:rivalLeft", onRivalLeft);
+    socket.on("error:message", onErr);
+
+    return () => {
+      socket.off("queue:waiting", onWaiting);
+      socket.off("match:found", onFound);
+      socket.off("match:start", onStart);
+      socket.off("match:rivalScore", onRivalScore);
+      socket.off("match:result", onResult);
+      socket.off("match:rivalLeft", onRivalLeft);
+      socket.off("error:message", onErr);
+      socket.emit("queue:leave");
+      disconnectSocket();
+    };
+  }, []);
+
+  function queueUp() {
+    setError(null);
+    setResult(null);
+    setMatch(null);
+    setChart(null);
+    setRivalScore(0);
+    setStartToken(undefined);
+    matchIdRef.current = null;
+    setPhase("searching");
+    setStatusMsg("Connecting…");
+    const socket = connectSocket();
+    socket.emit("queue:join", { name: name.trim() || "Dancer" });
+  }
+
+  function cancelQueue() {
+    connectSocket().emit("queue:leave");
+    setPhase("idle");
+    setStatusMsg(null);
+  }
+
+  function leaveBattle() {
+    const socket = connectSocket();
+    if (matchIdRef.current) {
+      socket.emit("match:finished", {
+        matchId: matchIdRef.current,
+        score: 0,
+      });
+    }
+    socket.emit("queue:leave");
+    matchIdRef.current = null;
+    setPhase("idle");
+    setMatch(null);
+    setChart(null);
+    setStartToken(undefined);
+    setStatusMsg(null);
+  }
+
+  function onScoreUpdate(score: number) {
+    const id = matchIdRef.current;
+    if (!id) return;
+    connectSocket().emit("match:score", { matchId: id, score });
+  }
+
+  function onComplete(res: LiveMatchResult) {
+    const id = matchIdRef.current;
+    if (!id) return;
+    connectSocket().emit("match:finished", {
+      matchId: id,
+      score: res.score,
+    });
+    setStatusMsg("Waiting for rival to finish…");
+  }
+
+  if ((phase === "matched" || phase === "live") && chart && match) {
+    return (
+      <main className="page battle">
+        <LiveChartMatch
+          mode="battle"
+          controlled
+          chart={chart}
+          videoUrl={match.chart.videoUrl}
+          title={`${match.chart.title} vs ${match.rival.name}`}
+          startToken={startToken}
+          rivalScore={rivalScore}
+          rivalName={match.rival.name}
+          onScoreUpdate={onScoreUpdate}
+          onComplete={onComplete}
+          onExit={leaveBattle}
+        />
+        {statusMsg && <p className="battle-status">{statusMsg}</p>}
+      </main>
+    );
+  }
 
   return (
     <main className="page battle">
       <header className="page-head">
         <h1>Battle</h1>
-        <p>Random opponent. Same chart. Highest score wins.</p>
+        <p>
+          Queue for a random rival. Same chart, live scores over Socket.io —
+          camera stays on your machine.
+        </p>
       </header>
 
-      <section className="arena" aria-live="polite">
-        <div className="lane-panel you">
-          <p className="lane-label">You</p>
-          <div className="cam-slot">Camera feed</div>
-          <p className="score">{phase === "idle" ? "—" : "12,480"}</p>
-        </div>
+      {error && <p className="api-error">{error}</p>}
 
-        <div className="match-meta">
-          {phase === "idle" && (
-            <>
-              <p className="meta-title">Ready when you are</p>
-              <button
-                type="button"
-                className="btn primary"
-                onClick={() => setPhase("searching")}
-              >
-                Queue up
+      <section className="battle-lobby">
+        {phase === "idle" && (
+          <>
+            <label className="field">
+              Display name
+              <input
+                type="text"
+                value={name}
+                maxLength={32}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Dancer"
+              />
+            </label>
+            <button type="button" className="btn primary" onClick={queueUp}>
+              Queue up
+            </button>
+            <p className="meta-sub">
+              Needs at least one published chart. Open two browser windows to
+              test locally.
+            </p>
+          </>
+        )}
+
+        {phase === "searching" && (
+          <>
+            <p className="meta-title searching">Finding rival…</p>
+            <p className="meta-sub">{statusMsg}</p>
+            <button type="button" className="btn ghost" onClick={cancelQueue}>
+              Cancel
+            </button>
+          </>
+        )}
+
+        {phase === "result" && result && (
+          <div className="battle-result">
+            <p className="meta-title">
+              {result.outcome === "win"
+                ? "You win"
+                : result.outcome === "lose"
+                  ? "You lose"
+                  : "Draw"}
+            </p>
+            <p className="meta-sub">
+              {result.you.score.toLocaleString()} — {result.rival.score.toLocaleString()}{" "}
+              ({result.rival.name})
+            </p>
+            <div className="page-actions">
+              <button type="button" className="btn primary" onClick={queueUp}>
+                Queue again
               </button>
-            </>
-          )}
-          {phase === "searching" && (
-            <>
-              <p className="meta-title searching">Finding rival…</p>
-              <p className="meta-sub">UI only — matchmaking comes later</p>
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={() => setPhase("live")}
-              >
-                Simulate match found
-              </button>
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={() => setPhase("idle")}
-              >
-                Cancel
-              </button>
-            </>
-          )}
-          {phase === "live" && (
-            <>
-              <p className="chart-name">Midnight Groove — Easy</p>
-              <p className="meta-sub">2:14 remaining · mock timer</p>
-              <div className="bar-track" aria-hidden="true">
-                <span className="bar you-bar" style={{ width: "62%" }} />
-                <span className="bar rival-bar" style={{ width: "54%" }} />
-              </div>
-              <button
-                type="button"
-                className="btn danger"
-                onClick={() => setPhase("result")}
-              >
-                End match (mock)
-              </button>
-            </>
-          )}
-          {phase === "result" && (
-            <>
-              <p className="meta-title">You win</p>
-              <p className="meta-sub">12,480 — 11,090</p>
-              <button
-                type="button"
-                className="btn primary"
-                onClick={() => setPhase("searching")}
-              >
-                Rematch
-              </button>
-              <Link to="/charts" className="btn ghost">
-                Pick another chart
+              <Link to="/solo" className="btn ghost">
+                Solo practice
               </Link>
-            </>
-          )}
-        </div>
-
-        <div className="lane-panel rival">
-          <p className="lane-label">Rival</p>
-          <div className="cam-slot dim">Waiting</div>
-          <p className="score">{phase === "idle" || phase === "searching" ? "—" : "11,090"}</p>
-        </div>
+            </div>
+          </div>
+        )}
       </section>
     </main>
   );

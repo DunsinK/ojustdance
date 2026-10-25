@@ -97,6 +97,31 @@ Chart reads/writes use the Supabase API (`SUPABASE_URL` + `SUPABASE_SECRET_KEY`)
 | `GET` | `/charts/:id` | one chart (+ full JSON) |
 | `POST` | `/charts` | `multipart/form-data`: `chart` (JSON string) + `video` (file) |
 
+## Socket.io (battles)
+
+Same port as HTTP (`3001`). Events:
+
+| Direction | Event | Purpose |
+|-----------|--------|---------|
+| C→S | `queue:join` `{ name }` | enter matchmaking |
+| C→S | `queue:leave` | leave queue |
+| S→C | `queue:waiting` | alone in queue |
+| S→C | `match:found` | paired + shared chart payload |
+| S→C | `match:start` | both start dancing (~1.5s after found) |
+| C→S | `match:score` | live score tick |
+| S→C | `match:rivalScore` | opponent score |
+| C→S | `match:finished` | local run done |
+| S→C | `match:result` | win / lose / draw |
+
+### Local test (no deploy)
+
+1. `npm run dev` in `backend/` and `frontend/`
+2. Publish at least one chart from **/map**
+3. Open `http://localhost:5173/battle` in **two** windows (or Chrome + Edge)
+4. Queue both → match starts → scores sync over Socket.io
+
+Pose stays on each browser; only scores + match handshake hit the server.
+
 ## Notes
 
 - Keep this on a different port than the Vite frontend (default frontend **5173**, backend **3001**).

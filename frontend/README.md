@@ -31,7 +31,7 @@ Routes:
 | Path | Page |
 |------|------|
 | `/` | Home |
-| `/battle` | Battle queue / mock match |
+| `/battle` | Socket.io queue + live duel |
 | `/map` | Pose mapper (MediaPipe + timeline editor) |
 | `/charts` | Chart list (placeholder) |
 | `/skeleton-debug` | Canonical skeleton fixtures and joint validity |
@@ -62,9 +62,11 @@ Restart `npm run dev` after changing env vars (Vite only reads them at startup).
 3. Timeline: select / delete clips, close gaps
 4. **Publish to library** uploads chart JSON + preview video to `POST /charts` (Supabase)
 
-**Solo Battles** (`/solo`) lists charts, then runs `LiveChartMatch`: reference video + live camera, pose graded against chart samples with a live score. Same component is meant for future P2P battles (`mode="battle"`).
+**Solo Battles** (`/solo`) lists charts, then runs `LiveChartMatch`: reference video + live camera, pose graded against chart samples with a live score.
 
-Grading helpers: `src/pose/gradePose.ts`. Shared pose stack: `src/pose/`.
+**Battle** (`/battle`) uses Socket.io: queue → pair → shared chart → live rival scores. Test with two local browser windows (no deploy). LiveKit can add A/V later; scores stay on your server.
+
+Grading: `src/pose/gradePose.ts`. Socket helper: `src/lib/socket.ts`.
 
 ## API smoke test
 
