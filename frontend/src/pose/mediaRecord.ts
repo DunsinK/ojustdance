@@ -64,7 +64,7 @@ export function createMusicBed(audio: HTMLAudioElement): MusicBed {
   };
 }
 
-/** Merge camera video track(s) with optional music bed audio. */
+/** Merge camera / canvas video track(s) with optional music bed audio. */
 export function combineAVStreams(
   videoStream: MediaStream,
   musicStream: MediaStream | null
@@ -72,6 +72,20 @@ export function combineAVStreams(
   const tracks = [...videoStream.getVideoTracks()];
   if (musicStream) tracks.push(...musicStream.getAudioTracks());
   return new MediaStream(tracks);
+}
+
+/** Capture a canvas that already composites camera + skeleton. */
+export function captureCompositeStream(
+  canvas: HTMLCanvasElement,
+  fps = 30
+): MediaStream {
+  if (typeof canvas.captureStream !== "function") {
+    throw new Error("canvas.captureStream is not supported in this browser");
+  }
+  if (!canvas.width || !canvas.height) {
+    throw new Error("Canvas has no size yet — wait for camera frames");
+  }
+  return canvas.captureStream(fps);
 }
 
 /** Record a MediaStream with pause/resume. Call stop() to get the final Blob. */

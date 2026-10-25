@@ -161,7 +161,8 @@ export function usePoseSource({
             const result = lm.detectForVideo(videoEl, now);
             const ctx = canvas.getContext("2d");
             if (ctx) {
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              // Video + skeleton on one bitmap so canvas.captureStream can record both.
+              ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
               const drawing = new DrawingUtils(ctx);
               for (const landmarks of result.landmarks) {
                 drawing.drawConnectors(landmarks, PL.POSE_CONNECTIONS, {

@@ -76,7 +76,7 @@ export async function analyzeVideoFile(opts: {
       }
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const drawing = new DrawingUtils(ctx);
         for (const landmarks of result.landmarks) {
           drawing.drawConnectors(landmarks, PL.POSE_CONNECTIONS, {

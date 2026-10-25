@@ -10,6 +10,7 @@ import {
   timelineDuration,
 } from "../pose/exportChart";
 import {
+  captureCompositeStream,
   combineAVStreams,
   createMusicBed,
   startSessionRecorder,
@@ -72,6 +73,7 @@ export function Map() {
   const lastSampleAtRef = useRef(0);
   const clockRafRef = useRef(0);
   const sessionRecorderRef = useRef<SessionRecorder | null>(null);
+  const compositeStreamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const musicInputRef = useRef<HTMLInputElement | null>(null);
   const musicBedRef = useRef<MusicBed | null>(null);
@@ -84,7 +86,6 @@ export function Map() {
     videoRef,
     canvasRef,
     landmarkerRef,
-    streamRef,
     ready,
     error,
     fps,
@@ -355,12 +356,15 @@ export function Map() {
     setTransport("recording");
 
     try {
-      const stream = streamRef.current;
-      if (!stream) throw new Error("No camera stream to record");
-
       if (!sessionRecorderRef.current) {
+        const canvas = canvasRef.current;
+        if (!canvas?.width) {
+          throw new Error("Pose canvas not ready — wait for tracking, then retry");
+        }
+        const composite = captureCompositeStream(canvas, 30);
+        compositeStreamRef.current = composite;
         const musicStream = musicBedRef.current?.stream ?? null;
-        const recordStream = combineAVStreams(stream, musicStream);
+        const recordStream = combineAVStreams(composite, musicStream);
         sessionRecorderRef.current = startSessionRecorder(recordStream, {
           withAudio: Boolean(musicStream),
         });
@@ -401,6 +405,8 @@ export function Map() {
     const recorder = sessionRecorderRef.current;
     sessionRecorderRef.current = null;
     setCaptureArmed(false);
+    const composite = compositeStreamRef.current;
+    compositeStreamRef.current = null;
     if (recorder) {
       try {
         const blob = await recorder.stop();
@@ -409,6 +415,7 @@ export function Map() {
         console.error(err);
       }
     }
+    composite?.getTracks().forEach((t) => t.stop());
   }
 
   function deleteSelected() {

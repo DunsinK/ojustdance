@@ -28,8 +28,11 @@
   object-fit: contain;
 }
 
+/* Canvas holds video+skeleton composite; keep video as camera source underneath. */
 .pose-stage canvas {
   pointer-events: none;
+  z-index: 1;
+  background: #0c1018;
 }
 
 .pose-stage video[controls] {
