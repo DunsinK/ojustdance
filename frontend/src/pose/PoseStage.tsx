@@ -11,6 +11,8 @@ type Props = {
   controls?: boolean;
   /** Let imported video dimensions determine the stage ratio instead of cropping. */
   fitVideo?: boolean;
+  /** Use another video’s aspect ratio to keep paired stages aligned. */
+  aspectRatio?: string | null;
 };
 
 export function PoseStage({
@@ -21,13 +23,15 @@ export function PoseStage({
   recording = false,
   controls = false,
   fitVideo = false,
+  aspectRatio,
 }: Props) {
   const [videoAspectRatio, setVideoAspectRatio] = useState<string | null>(null);
+  const stageAspectRatio = aspectRatio ?? videoAspectRatio;
 
   return (
     <div
-      className={`pose-stage${recording ? " recording" : ""}${fitVideo ? " fit-video" : ""}${videoAspectRatio ? " fit-video-ready" : ""}`}
-      style={videoAspectRatio ? { aspectRatio: videoAspectRatio } : undefined}
+      className={`pose-stage${recording ? " recording" : ""}${fitVideo ? " fit-video" : ""}${stageAspectRatio ? " fit-video-ready" : ""}`}
+      style={stageAspectRatio ? { aspectRatio: stageAspectRatio } : undefined}
     >
       <video
         ref={videoRef}

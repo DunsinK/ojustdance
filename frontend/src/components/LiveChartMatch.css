@@ -182,6 +182,18 @@
   display: none;
 }
 
+.live-match.mode-solo .live-ref-video,
+.live-match.mode-solo .pose-stage {
+  aspect-ratio: var(--solo-reference-aspect-ratio, 16 / 10);
+  min-height: 0;
+}
+
+.live-match.mode-solo .live-ref-video,
+.live-match.mode-solo .pose-stage video,
+.live-match.mode-solo .pose-stage canvas {
+  object-fit: contain;
+}
+
 /* Battle preview: big chart center, you as side PIP */
 .live-match.layout-preview .live-match-stages {
   grid-template-columns: 1fr;
