@@ -1,4 +1,4 @@
-# Dance scoring, version 2
+# Dance scoring, version 3
 
 The player compares the dancer's **pose shape and movement at song time** with
 the recorded reference. It does not score the thumbnail pictures. Solo and Battle
@@ -31,6 +31,7 @@ landmark index or response wrapper.
 | `contracts.ts` | Versioned score, configuration, reference, observation, and feature types |
 | `features.ts` | Extract comparable XY geometry from one canonical frame |
 | `similarity.ts` | Compare shape and changes in shape/root position |
+| `motionWindow.ts` | Measure continuous motion over 200 ms, including its midpoint |
 | `referenceTrack.ts` | Resample a chart on the scoring timeline; interpolate usable evidence |
 | `legacyChartAdapter.ts` | Explicit compatibility boundary for old relative-landmark charts |
 | `alignment.ts` | Find a short, constrained timing alignment |
@@ -83,12 +84,14 @@ hip does not invalidate the unrelated arms.
 
 Expected reference weights remain in the denominator. Missing player features
 cannot improve their weighted form contribution. There must be at least 65%
-of the expected weighted evidence and three supported limbs, or all reference
-limbs if the reference contains only two. A reference needs at least two limb
+of the expected weighted evidence and two supported limbs. An intermittently
+visible third limb cannot veto two well-measured arms. Coverage still prevents
+two arms alone from earning full-body points. A reference needs at least two limb
 groups to be usable at all. Partial evidence reduces points and cannot earn
 `PERFECT` unless coverage reaches 95%.
 
-Too little player evidence produces `TRACKING` and zero points for that time,
+Measured accuracy and tracking reliability are separate. Too little player
+evidence produces `TRACKING` and zero points for that time,
 with a neutral UI message. It is not displayed as a confidently diagnosed dance
 mistake. There is no stale-pose reuse, fabricated depth, or gap filling. Missing
 reference sections are excluded from the maximum available score for everyone.
@@ -115,22 +118,37 @@ Only features valid at both ends survive. It never crosses an explicit missing
 frame, clip/coordinate discontinuity, or long gap. Outside the observed range,
 only a 15 ms edge margin is allowed. A frozen camera therefore stops earning.
 
-For each supported opportunity:
+For each supported moving opportunity, `C` is pose evidence coverage and `M`
+is motion evidence coverage:
 
 ```text
-accuracy = evidence coverage × (70% form + 15% motion + 15% timing)
+pointCredit = 0.55 × C × form + 0.30 × M × motionSimilarity + 0.15 × C × timing
+measuredWeight = 0.70 × C + 0.30 × M
+accuracy = pointCredit / measuredWeight
 ```
 
-Motion compares feature changes and normalized root displacement. Tiny changes
-below an activity floor are ignored (2 degrees for bends, 0.025 for normalized
-direction/endpoint/root changes). Active motion allows a 15% difference in its
-change magnitude before penalizing it. If motion similarity is below 35%,
-accuracy is capped at 60% of coverage: standing still cannot receive a high
-judgment during clear movement. Timing credit decreases with squared relative
-lag, to 50% at the band edge. Alignment slightly favors smaller time shifts.
+Held poses use `accuracy = form` and `pointCredit = C × form`. Unknown motion
+has zero motion evidence. Expected weights stay fixed for awarding points, so
+hiding a wrong limb cannot earn more points. Accuracy describes the signals we
+could measure; point credit determines score. A partial pose can therefore
+match well while earning fewer points.
 
-Judgments: `PERFECT` needs accuracy ≥90%, coverage ≥95%, and lag ≤30 ms;
-`GOOD` ≥70%; `OK` ≥45%; otherwise `MISS`. Tracking failures and absent reference
+Motion uses a continuous 200 ms window, including its midpoint to detect quick
+out-and-back gestures. It no longer grades noisy 50 ms differences or imposes
+a hard 60% cap. No gap is filled: incompatible/missing spans and features that
+disappear inside a span have unknown motion. The timing band remains ±30–70 ms.
+
+Activity floors are 6 degrees for bends, 0.06 for normalized directions/root
+travel, and 0.08 chain lengths for endpoints. Above the floor, the error allowance
+is the larger of 60% of the floor or 25% of measured change, bounded at half the
+change. Error beyond this allowance decreases similarity linearly to zero when
+the player remains stationary. These provisional allowances are tested with
+independently perturbed reference and camera samples.
+
+Timing credit decreases with squared relative lag, to 50% at the band edge.
+Alignment slightly favors smaller time shifts. `PERFECT` needs accuracy ≥90%,
+pose coverage ≥95%, motion coverage ≥80% when active, and lag ≤30 ms. `GOOD`
+needs ≥70%; `OK` ≥45%; otherwise `MISS`. Tracking failures and absent reference
 have their own labels.
 
 The separate **200 ms delivery deadline** allows inference results to arrive;
@@ -141,16 +159,26 @@ default setting. The end of the video drains that same bounded deadline.
 
 ## 4. Award comparable points
 
-The maximum is 10,000 per full reference. Points are the time-weighted accuracy
+The maximum is 10,000 per full reference. Points are the time-weighted point credit
 over usable reference duration. There is no combo multiplier. Early exit keeps
 the full reference denominator; quitting during an easy introduction cannot
 produce a full score.
 
-Combo counts successful 0.5-second windows with average accuracy ≥70%. These
+Combo counts successful 0.5-second windows with average point credit ≥70%. These
 are fixed time windows, **not detected musical beats**. Render frames do not
 create scoring opportunities. Identical camera streams at 30, 60, or 144 render
 FPS must produce identical results. Repeated/paused/backward clock ticks do not
 re-award finalized judgments. Restart creates a new scorer.
+
+`averageAccuracy` averages measured accuracy only over judgeable moments,
+including genuine misses. `judgedCoverage` reports the fraction of reference
+moments that could be judged, and `trackingCoverage` reports observed feature
+coverage. Fully missing tracking earns zero points, breaks combo, and is not
+reported as a zero-angle-match dance mistake. Partial evidence cannot inflate
+points, and an attempt with no judgeable moments has zero accuracy and score.
+Original version 2 results remain unchanged; the Attempts table labels their
+old combined accuracy metric so it is not confused with version 3's measured
+match. Historical contracts accept the new fields as optional.
 
 The original reference video remains unspliced when chart clips are moved.
 With a reference video, scoring uses `sourceTimeSec` and video duration. Without
@@ -184,10 +212,10 @@ const display = scorer.advance(currentSongSeconds)
 const result = scorer.finish(reference.durationSec)
 ```
 
-`dance-scoring/2` fixes the sampling, coverage, combo, deadline, and alignment
+`dance-scoring/3` fixes the sampling, coverage, combo, deadline, and alignment
 policies. Only tolerance is adjustable without a version change. The derived
 reference schema is `dance-score-reference/2`; returned scores use
-`dance-score/2`. Existing chart storage and numeric Battle socket payloads are
+`dance-score/3`. Existing chart storage and numeric Battle socket payloads are
 unchanged. A future authoritative multiplayer scorer must negotiate the same
 policy/reference before comparing results; the existing backend still trusts
 client-submitted scores.
@@ -224,9 +252,9 @@ interpolation gaps, source-video timing, legacy charts, retries, early exit,
 and refresh-rate invariance. They test algorithm behavior; they do not establish
 the accuracy of real webcam measurements.
 
-Validation performed for this change:
+Validation performed for the current scorer:
 
-* `npm test`: 91 passing tests (24 skeleton, 42 thumbnail, 25 scoring).
+* `npm test`: 109 passing tests (24 skeleton, 42 thumbnail, 31 scoring, 12 attempt replay).
 * Production build with Node 22: passed, with the existing large-bundle warning.
 * Focused ESLint on scoring and the changed player/types: passed. Repository
   lint still reports six existing errors and two warnings in `ApiTest.tsx`,
@@ -239,6 +267,11 @@ Validation performed for this change:
   nonfatal preview failure, cached stills, and no-video behavior still passed.
   Matchmaking and camera/provider operations were mocked; no real queue was
   joined and no shared content was written.
+* Local recorded-data controls: using the same recorded motion as its reference
+  scores 100%; stationary and mirrored controls score materially lower. The
+  original recording/result are preserved. Against the actual original dance,
+  the saved example has about 55% measured match on 79% judgeable moments;
+  these changes do not declare a mismatched performance perfect.
 
 ## Remaining limits
 

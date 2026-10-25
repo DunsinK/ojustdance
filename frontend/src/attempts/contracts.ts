@@ -4,8 +4,10 @@ import type { ReferenceOptions } from '../scoring/referenceTrack.js'
 
 export const ATTEMPT_LIMITS = Object.freeze({ bytes: 128 * 1024 * 1024, events: 250_000, observations: 75_000, trace: 25_000 })
 // Historical policies/results are data. Never validate them against today's fixed scoring rules.
-export type SavedPolicy = Omit<ScoringConfig, 'schemaVersion'> & { readonly schemaVersion: string }
-export type SavedScore = Omit<ScoreSnapshot, 'schemaVersion' | 'maxScore'> & { readonly schemaVersion: string; readonly maxScore: number }
+export type SavedPolicy = Omit<ScoringConfig, 'schemaVersion' | 'motionWindowSec'> & { readonly schemaVersion: string; readonly motionWindowSec?: number }
+type NewScoreFields = 'pointCredit' | 'motion' | 'trackingCoverage' | 'judgedCoverage'
+export type SavedScore = Omit<ScoreSnapshot, 'schemaVersion' | 'maxScore' | NewScoreFields>
+  & Partial<Pick<ScoreSnapshot, NewScoreFields>> & { readonly schemaVersion: string; readonly maxScore: number }
 export interface ScoreTracePoint { readonly songTimeSec: number; readonly result: SavedScore }
 export type AttemptEvent =
   | { readonly kind: 'observation'; readonly observation: PlayerObservation; readonly originallyAccepted: boolean }

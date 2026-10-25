@@ -33,6 +33,9 @@ if (!input) {
     if (output) await writeFile(output, JSON.stringify(evaluation, null, 2), { flag: 'wx' })
     console.log(JSON.stringify({ attemptId: attempt.id, originalScore: attempt.original.result.score,
       replayScore: evaluation.result.score, difference: evaluation.result.score - attempt.original.result.score,
+      originalScoreVersion: attempt.original.result.schemaVersion, replayScoreVersion: evaluation.result.schemaVersion,
+      measuredMatch: evaluation.result.averageAccuracy, judgedCoverage: evaluation.result.judgedCoverage,
+      trackingMisses: evaluation.result.trackingMisses,
       originalImplementation: attempt.original.implementationId, replayImplementation: evaluation.implementationId,
       ...(output ? { comparisonFile: resolve(output) } : {}),
     }, null, 2))

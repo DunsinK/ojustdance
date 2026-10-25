@@ -4,7 +4,7 @@ import { extractPoseFeatures, hasReferenceEvidence } from './features.js'
 import { alignBlock } from './alignment.js'
 import type { AlignmentAnchor } from './alignment.js'
 
-const EMPTY: Judgment = { timeSec: 0, accuracy: 0, form: 0, timing: 0, coverage: 0, offsetMs: null, label: '…' }
+const EMPTY: Judgment = { timeSec: 0, accuracy: 0, pointCredit: 0, form: 0, motion: null, timing: 0, coverage: 0, offsetMs: null, label: '…' }
 
 /** Per-attempt temporal state lives here, never inside the canonical skeleton. */
 export class DanceScorer {
@@ -15,6 +15,9 @@ export class DanceScorer {
   private anchor: AlignmentAnchor | null = null
   private awardedSeconds = 0
   private evaluatedSeconds = 0
+  private judgedSeconds = 0
+  private measuredAccuracySeconds = 0
+  private coverageSeconds = 0
   private trackingMisses = 0
   private lastClock = -Infinity
   private lastCapture = -Infinity
@@ -39,7 +42,7 @@ export class DanceScorer {
       || receivedAtSongTimeSec - songTimeSec > this.config.processingDeadlineMs / 1000 + 1e-7) return false
     this.lastCapture = songTimeSec
     const earliest = this.reference.opportunities[this.nextIndex]?.timeSec ?? this.reference.durationSec
-    if (songTimeSec < earliest - this.config.timingToleranceMs / 1000 - this.config.maximumSampleGapMs / 1000) return false
+    if (songTimeSec < earliest - this.config.timingToleranceMs / 1000 - this.config.maximumSampleGapMs / 1000 - this.config.motionWindowSec) return false
     let pose = null
     if (frame) {
       try { pose = extractPoseFeatures(frame) } catch { /* Bad provider metadata is unavailable evidence, never a fabricated pose. */ }
@@ -74,10 +77,12 @@ export class DanceScorer {
     return this.snapshot()
   }
   snapshot(): ScoreSnapshot {
-    return { ...this.latest, schemaVersion: 'dance-score/2', maxScore: 10000,
+    return { ...this.latest, schemaVersion: 'dance-score/3', maxScore: 10000,
       score: this.reference.scorableDurationSec ? Math.min(10000, 10000 * this.awardedSeconds / this.reference.scorableDurationSec) : 0,
       combo: this.combo, maxCombo: this.maxCombo,
-      averageAccuracy: this.evaluatedSeconds ? this.awardedSeconds / this.evaluatedSeconds : 0,
+      averageAccuracy: this.judgedSeconds ? this.measuredAccuracySeconds / this.judgedSeconds : 0,
+      trackingCoverage: this.evaluatedSeconds ? this.coverageSeconds / this.evaluatedSeconds : 0,
+      judgedCoverage: this.evaluatedSeconds ? this.judgedSeconds / this.evaluatedSeconds : 0,
       trackingMisses: this.trackingMisses, processedOpportunities: this.nextIndex }
   }
   private closeComboWindow() {
@@ -100,16 +105,22 @@ export class DanceScorer {
       while (end < block.length && hasReferenceEvidence(block[end].pose)
         && block[end].pose!.continuity === block[end - 1].pose!.continuity) end++
       if (this.anchor && this.anchor.reference.continuity !== block[begin].pose!.continuity) this.anchor = null
-      const aligned = alignBlock(block.slice(begin, end), this.observations, this.config, this.anchor)
+      const history = this.reference.opportunities.slice(Math.max(0, this.nextIndex - Math.ceil(this.config.motionWindowSec * this.config.sampleHz) - 1), this.nextIndex)
+      const aligned = alignBlock(block.slice(begin, end), this.observations, this.config, this.anchor, history)
       aligned.forEach((entry, index) => {
         const point = block[begin + index]
         const bucket = Math.floor((point.timeSec + 1e-9) / this.config.comboWindowSec)
         if (bucket !== this.comboBucket) { this.closeComboWindow(); this.comboBucket = bucket }
         this.latest = entry.judgment
         this.anchor = entry.anchor
-        this.awardedSeconds += point.durationSec * entry.judgment.accuracy
+        this.awardedSeconds += point.durationSec * entry.judgment.pointCredit
         this.evaluatedSeconds += point.durationSec
-        this.comboValue += point.durationSec * entry.judgment.accuracy
+        this.coverageSeconds += point.durationSec * entry.judgment.coverage
+        if (entry.judgment.label !== 'TRACKING') {
+          this.judgedSeconds += point.durationSec
+          this.measuredAccuracySeconds += point.durationSec * entry.judgment.accuracy
+        }
+        this.comboValue += point.durationSec * entry.judgment.pointCredit
         this.comboWeight += point.durationSec
         if (entry.judgment.label === 'TRACKING') this.trackingMisses++
         this.nextIndex++
@@ -117,7 +128,7 @@ export class DanceScorer {
       begin = end
     }
     const keepFrom = (this.reference.opportunities[this.nextIndex]?.timeSec ?? this.reference.durationSec)
-      - this.config.timingToleranceMs / 1000 - this.config.maximumSampleGapMs / 1000
+      - this.config.timingToleranceMs / 1000 - this.config.maximumSampleGapMs / 1000 - this.config.motionWindowSec
     // Retain one bracketing observation for interpolation, not an unbounded history.
     const firstRecent = this.observations.findIndex((point) => point.timeSec >= keepFrom)
     if (firstRecent > 1) this.observations.splice(0, firstRecent - 1)

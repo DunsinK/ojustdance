@@ -9,6 +9,7 @@ import { comparePoses, compareMotion } from '../.keyframe-tests/scoring/similari
 import { buildReferenceTrack, poseAtTime } from '../.keyframe-tests/scoring/referenceTrack.js'
 import { adaptLegacyChartSample } from '../.keyframe-tests/scoring/legacyChartAdapter.js'
 import { alignBlock } from '../.keyframe-tests/scoring/alignment.js'
+import { compareMotionWindow } from '../.keyframe-tests/scoring/motionWindow.js'
 
 const close = (actual, expected, tolerance = 1e-7) => assert.ok(Math.abs(actual - expected) < tolerance, `${actual} != ${expected}`)
 function finiteTree(value) {
@@ -261,7 +262,81 @@ test('scene travel is compared separately from translation-invariant form', () =
   const stationary = replay({ reference, player: imageFrame }).result.score
   assert.ok(matched > stationary + 1800, `${matched} versus ${stationary}`)
   close(comparePoses(extractPoseFeatures(moving(1)), extractPoseFeatures(imageFrame())).form, 1)
-  assert.equal(compareMotion(extractPoseFeatures(moving(0)), extractPoseFeatures(moving(0.05)), extractPoseFeatures(imageFrame()), extractPoseFeatures(imageFrame())).active, true)
+  assert.equal(compareMotion(extractPoseFeatures(moving(0)), extractPoseFeatures(moving(0.2)), extractPoseFeatures(imageFrame()), extractPoseFeatures(imageFrame())).active, true)
+})
+
+test('measured accuracy stays separate from missing evidence and earned points', () => {
+  const reference = chartFor(imageFrame)
+  const partial = replay({ reference, player: (time) => hide(imageFrame(time), 'leftWrist') }).result
+  close(partial.averageAccuracy, 1)
+  close(partial.judgedCoverage, 1)
+  assert.ok(partial.trackingCoverage < 0.9 && partial.trackingCoverage > 0.65)
+  assert.ok(partial.score < 9000)
+  const missingInterval = replay({ reference, player: (time) => time > 1 && time < 2 ? null : imageFrame(time) }).result
+  close(missingInterval.averageAccuracy, 1)
+  assert.ok(missingInterval.judgedCoverage > 0.5 && missingInterval.judgedCoverage < 0.75)
+  assert.ok(missingInterval.score < 7500)
+  const absent = replay({ player: () => null }).result
+  assert.equal(absent.averageAccuracy, 0); assert.equal(absent.judgedCoverage, 0); assert.equal(absent.score, 0)
+})
+
+test('an intermittently observed third limb cannot veto two well-measured arms', () => {
+  const reference = imageFrame(), player = imageFrame()
+  hide(reference, 'leftHip', 'leftKnee', 'leftAnkle', 'rightAnkle')
+  hide(player, 'leftHip', 'leftKnee', 'leftAnkle', 'rightKnee', 'rightAnkle')
+  const grade = comparePoses(extractPoseFeatures(player), extractPoseFeatures(reference))
+  assert.equal(grade.supportedParts, 2); assert.equal(grade.status, 'partial')
+  assert.ok(grade.coverage > 0.8); close(grade.form, 1)
+})
+
+test('matching low-rate video and noisy webcam movement remains high without rewarding a stationary player', () => {
+  const reference = chartFor(danceFrame, 3, 15)
+  const noisy = (time) => danceFrame(time, (frame) => {
+    for (const [index, joint] of Object.values(frame.observations).entries()) {
+      joint.position.x += 1.5 * Math.sin(time * 83 + index)
+      joint.position.y += 1.5 * Math.cos(time * 71 + index)
+    }
+  })
+  const correct = replay({ reference, player: noisy, cameraHz: 30 }).result
+  const stationary = replay({ reference, player: imageFrame, cameraHz: 30 }).result
+  assert.ok(correct.averageAccuracy > 0.9, JSON.stringify(correct))
+  assert.ok(correct.score > stationary.score + 1800)
+  assert.ok(correct.judgedCoverage > 0.95)
+})
+
+test('small tracking jitter during a held reference pose is not an important motion', () => {
+  const jitter = (time) => imageFrame(time, (frame) => {
+    frame.observations.leftWrist.position.x += Math.sin(time * 63)
+    frame.observations.leftWrist.position.y += Math.cos(time * 59)
+  })
+  const result = replay({ reference: chartFor(jitter, 3, 15), player: imageFrame }).result
+  assert.ok(result.averageAccuracy > 0.98, JSON.stringify(result))
+})
+
+test('motion window rejects tracking gaps and still detects an out-and-back movement', () => {
+  const sequence = Array.from({ length: 25 }, (_, index) => {
+    const timeSec = index / 60
+    return { timeSec, pose: extractPoseFeatures(danceFrame(timeSec)) }
+  })
+  const gap = sequence.map((entry, index) => index === 8 ? { ...entry, pose: null } : entry)
+  const unknown = compareMotionWindow(sequence, gap, 0.3, 0)
+  assert.equal(unknown.coverage, 0)
+  const cyclic = Array.from({ length: 25 }, (_, index) => {
+    const timeSec = index / 60
+    return { timeSec, pose: extractPoseFeatures(imageFrame(timeSec, (frame) => {
+      frame.observations.leftWrist.position.y += 50 * (1 - Math.cos(timeSec * Math.PI * 10))
+    })) }
+  })
+  const still = cyclic.map((entry) => ({ ...entry, pose: extractPoseFeatures(imageFrame()) }))
+  const motion = compareMotionWindow(cyclic, still, 0.2, 0)
+  assert.ok(motion.active); assert.ok(motion.similarity < 0.5)
+})
+
+test('hiding an incorrect moving arm cannot improve awarded points', () => {
+  const reference = chartFor(danceFrame)
+  const visible = replay({ reference, player: imageFrame }).result
+  const hidden = replay({ reference, player: (time) => hide(imageFrame(time), 'leftElbow', 'leftWrist') }).result
+  assert.ok(hidden.score <= visible.score + 1e-7, `${hidden.score} > ${visible.score}`)
 })
 
 test('original-video scoring uses source seconds after chart edits; chart mode uses chart seconds', () => {

@@ -123,11 +123,15 @@ export function Attempts() {
           <button type="button" className="btn primary" disabled={busy || attempt.recordingStatus !== 'complete'} onClick={() => void evaluate()}>Replay with current algorithm</button>
           {busy && <><span role="status">Replaying {Math.round(progress * 100)}%…</span><button type="button" className="btn ghost" onClick={() => abortRef.current?.abort()}>Cancel replay</button></>}
         </div>
-        <div className="attempt-table-wrap"><table><caption>Original baseline and saved comparisons</caption><thead><tr><th>Run</th><th>Score</th><th>Difference</th><th>Match</th><th>Tracking misses</th><th>Tolerance</th></tr></thead>
-          <tbody><tr><th>Original (fixed)</th><td>{points(attempt.original.result.score)}</td><td>—</td><td>{Math.round(attempt.original.result.averageAccuracy * 100)}%</td><td>{attempt.original.result.trackingMisses}</td><td>±{attempt.original.policy.timingToleranceMs} ms</td></tr>
+        <div className="attempt-table-wrap"><table><caption>Original baseline and saved comparisons</caption><thead><tr><th>Run</th><th>Score</th><th>Difference</th><th>Measured match</th><th>Judged</th><th>Tracking misses</th><th>Tolerance</th></tr></thead>
+          <tbody><tr><th>Original (fixed)</th><td>{points(attempt.original.result.score)}</td><td>—</td><td>{Math.round(attempt.original.result.averageAccuracy * 100)}%
+            {attempt.original.result.schemaVersion !== 'dance-score/3' && <small>v2 includes tracking loss</small>}</td>
+            <td>{attempt.original.result.judgedCoverage === undefined ? '—' : `${Math.round(attempt.original.result.judgedCoverage * 100)}%`}</td><td>{attempt.original.result.trackingMisses}</td><td>±{attempt.original.policy.timingToleranceMs} ms</td></tr>
             {evaluations.map((evaluation) => { const difference = evaluation.result.score - attempt.original.result.score
               return <tr key={evaluation.id}><th>{evaluation.label}<small title={evaluation.implementationId}>{evaluation.implementationId.replace('sha256:', '').slice(0, 12)} · {new Date(evaluation.createdAt).toLocaleString()}</small></th>
-                <td>{points(evaluation.result.score)}</td><td>{difference >= 0 ? '+' : ''}{points(difference)}</td><td>{Math.round(evaluation.result.averageAccuracy * 100)}%</td><td>{evaluation.result.trackingMisses}</td><td>±{evaluation.policy.timingToleranceMs} ms</td></tr>
+                <td>{points(evaluation.result.score)}</td><td>{difference >= 0 ? '+' : ''}{points(difference)}</td><td>{Math.round(evaluation.result.averageAccuracy * 100)}%
+                  {evaluation.result.schemaVersion !== 'dance-score/3' && <small>v2 includes tracking loss</small>}</td>
+                <td>{evaluation.result.judgedCoverage === undefined ? '—' : `${Math.round(evaluation.result.judgedCoverage * 100)}%`}</td><td>{evaluation.result.trackingMisses}</td><td>±{evaluation.policy.timingToleranceMs} ms</td></tr>
             })}</tbody></table></div>
         <figure className="attempt-score-plot"><svg viewBox="0 0 780 200" role="img" aria-label="Cumulative score over song time: original in gray, latest replay in green">
           <path d="M40 20V170H740" fill="none" stroke="#888" />

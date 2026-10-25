@@ -11,6 +11,11 @@ page opens. Each replay adds a separate comparison with a label, date, scoring
 policy, source fingerprint, final score, and score trace. Editing the scoring
 code can change the next comparison but cannot overwrite the original result.
 
+Scoring version 3 separates measured match from tracking: **Measured match**
+averages judgeable moments, while **Judged** shows how much of the reference
+could be assessed. Points still account for missing evidence. Version 2's old
+combined accuracy stays intact and is labeled “v2 includes tracking loss.”
+
 ## What gets saved
 
 `dance-attempt/1` contains:

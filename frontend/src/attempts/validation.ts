@@ -27,6 +27,12 @@ function score(value: unknown) {
   number(result.maxScore, 'maxScore', 1)
   number(result.score, 'score', 0, result.maxScore + 1e-6)
   for (const key of ['accuracy', 'averageAccuracy', 'form', 'timing', 'coverage']) number(result[key], key, 0, 1.000001)
+  for (const key of ['pointCredit', 'trackingCoverage', 'judgedCoverage']) if (result[key] !== undefined) number(result[key], key, 0, 1.000001)
+  if (result.motion !== undefined && result.motion !== null) number(result.motion, 'motion', 0, 1.000001)
+  if (result.schemaVersion === 'dance-score/3') {
+    for (const key of ['pointCredit', 'trackingCoverage', 'judgedCoverage']) number(result[key], key, 0, 1.000001)
+    if (result.motion !== null) number(result.motion, 'motion', 0, 1.000001)
+  }
   for (const key of ['combo', 'maxCombo', 'trackingMisses', 'processedOpportunities']) {
     number(result[key], key, 0, 1e6)
     if (!Number.isInteger(result[key])) throw new Error(`${key} must be an integer`)
@@ -40,6 +46,7 @@ function policy(value: unknown) {
   text(config.schemaVersion, 'policy.schemaVersion', 100)
   for (const key of ['timingToleranceMs', 'sampleHz', 'blockSize', 'processingDeadlineMs', 'maximumSampleGapMs', 'comboWindowSec']) number(config[key], key, 0.000001, 10_000)
   number(config.minimumCoverage, 'minimumCoverage', 0, 1)
+  if (config.motionWindowSec !== undefined) number(config.motionWindowSec, 'motionWindowSec', 0.001, 10)
 }
 function resultWithTrace(value: ObjectData) {
   text(value.implementationId, 'implementationId', 200)

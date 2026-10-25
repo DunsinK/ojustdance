@@ -46,8 +46,9 @@ type Props = {
 };
 
 const INITIAL_TICK: ScoreSnapshot = {
-  schemaVersion: 'dance-score/2', score: 0, maxScore: 10000, combo: 0, maxCombo: 0,
-  accuracy: 0, averageAccuracy: 0, form: 0, timing: 0, coverage: 0, offsetMs: null,
+  schemaVersion: 'dance-score/3', score: 0, maxScore: 10000, combo: 0, maxCombo: 0,
+  accuracy: 0, pointCredit: 0, averageAccuracy: 0, form: 0, motion: null, timing: 0, coverage: 0, offsetMs: null,
+  trackingCoverage: 0, judgedCoverage: 0,
   timeSec: 0, label: '…', trackingMisses: 0, processedOpportunities: 0,
 };
 
@@ -366,6 +367,7 @@ export function LiveChartMatch({
             onChange={(event) => setTimingToleranceMs(Number(event.target.value))} />
         </label>
         <span>Form {Math.round(tick.form * 100)}% · Visible evidence {Math.round(tick.coverage * 100)}%
+          {tick.motion !== null && ` · Motion ${Math.round(tick.motion * 100)}%`}
           {tick.offsetMs !== null && ` · ${Math.abs(tick.offsetMs)} ms ${tick.offsetMs < 0 ? 'early' : tick.offsetMs > 0 ? 'late' : 'on time'}`}</span>
       </div>
       <div className="live-scoring-controls">
@@ -439,7 +441,8 @@ export function LiveChartMatch({
       {finished && (
         <p className="live-result">
           Final {Math.round(tick.score).toLocaleString()} · max combo{" "}
-          {tick.maxCombo} · avg match {Math.round(finalAvg * 100)}%
+          {tick.maxCombo} · measured match {Math.round(finalAvg * 100)}%
+          {' · '}judged {Math.round(tick.judgedCoverage * 100)}% of reference moments
         </p>
       )}
     </div>

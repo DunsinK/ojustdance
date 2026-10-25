@@ -74,6 +74,25 @@ test('historical policy/version and old scores are accepted as fixed data, not r
   assert.ok(evaluation.result.score > 9900)
   assert.equal(evaluation.policy.sampleHz, 20)
 })
+test('version 2 recordings without new accuracy/coverage fields replay under version 3 unchanged', async () => {
+  const attempt = recordedFixture({ player: (time) => hide(imageFrame(time), 'leftWrist'), chart: chartFor(imageFrame) })
+  attempt.original.policy.schemaVersion = 'dance-scoring/2'
+  delete attempt.original.policy.motionWindowSec
+  const historic = (result) => {
+    result.schemaVersion = 'dance-score/2'
+    result.averageAccuracy = result.score / result.maxScore
+    for (const field of ['pointCredit', 'motion', 'judgedCoverage', 'trackingCoverage']) delete result[field]
+  }
+  historic(attempt.original.result)
+  attempt.original.trace.forEach((point) => historic(point.result))
+  const before = encodeAttemptData(attempt)
+  const replay = await replayAttempt(parseAttempt(before), replayOptions())
+  assert.equal(encodeAttemptData(attempt), before)
+  assert.equal(replay.result.schemaVersion, 'dance-score/3')
+  assert.equal(replay.policy.schemaVersion, 'dance-scoring/3')
+  assert.equal(replay.result.averageAccuracy, 1)
+  assert.ok(replay.result.trackingCoverage < 0.9)
+})
 test('an early exit replays the actual finish call and retains the full original reference denominator', async () => {
   const attempt = recordedFixture({ chart: chartFor(imageFrame), player: imageFrame, stopAt: 1 })
   const evaluation = await replayAttempt(attempt, replayOptions())
