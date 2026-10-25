@@ -30,6 +30,14 @@ type Props = {
   mode?: "solo" | "battle";
   onExit?: () => void;
   onComplete?: (result: LiveMatchResult) => void;
+  /** Bump (e.g. Date.now()) to auto-start when camera is ready — used by P2P battles. */
+  startToken?: number;
+  /** Live score stream for Socket.io / rival UI. */
+  onScoreUpdate?: (score: number) => void;
+  rivalScore?: number | null;
+  rivalName?: string;
+  /** Hide local Start/Retry (parent drives lifecycle). */
+  controlled?: boolean;
 };
 
 const INITIAL_TICK: ScoreTick = {
@@ -46,6 +54,11 @@ export function LiveChartMatch({
   mode = "solo",
   onExit,
   onComplete,
+  startToken,
+  onScoreUpdate,
+  rivalScore = null,
+  rivalName = "Rival",
+  controlled = false,
 }: Props) {
   const refVideoRef = useRef<HTMLVideoElement | null>(null);
   const [thumbnailAppearance, setThumbnailAppearance] = useState<ThumbnailAppearance>({ ...DEFAULT_THUMBNAIL_APPEARANCE });
@@ -69,6 +82,9 @@ export function LiveChartMatch({
   const accuracyCountRef = useRef(0);
   const completedRef = useRef(false);
   const playingRef = useRef(false);
+  const onScoreUpdateRef = useRef(onScoreUpdate);
+  const lastScoreEmitRef = useRef(0);
+  onScoreUpdateRef.current = onScoreUpdate;
 
   const duration = Math.max(
     chart.durationSec || 0,
@@ -163,6 +179,11 @@ export function LiveChartMatch({
       setAccuracy(nextAcc);
       setChartTime(t);
 
+      if (now - lastScoreEmitRef.current > 200) {
+        lastScoreEmitRef.current = now;
+        onScoreUpdateRef.current?.(Math.round(nextTick.score));
+      }
+
       raf = requestAnimationFrame(loop);
     };
 
@@ -172,10 +193,12 @@ export function LiveChartMatch({
   }, [playing, videoUrl, duration, chart.samples]);
 
   async function start() {
+    if (playingRef.current) return;
     completedRef.current = false;
     accuracySumRef.current = 0;
     accuracyCountRef.current = 0;
     lastGradeAtRef.current = 0;
+    lastScoreEmitRef.current = 0;
     chartTimeRef.current = 0;
     tickRef.current = INITIAL_TICK;
     setTick(INITIAL_TICK);
@@ -196,6 +219,12 @@ export function LiveChartMatch({
     playingRef.current = true;
     setPlaying(true);
   }
+
+  useEffect(() => {
+    if (startToken == null || !ready || playing || finished) return;
+    void start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startToken, ready]);
 
   function stopEarly() {
     finishMatch(chartTimeRef.current);
@@ -228,11 +257,19 @@ export function LiveChartMatch({
         </div>
         <div className="live-scoreboard">
           <div className="live-score">
-            <span className="live-score-label">Score</span>
+            <span className="live-score-label">You</span>
             <span className="live-score-value">
               {Math.round(tick.score).toLocaleString()}
             </span>
           </div>
+          {rivalScore != null && (
+            <div className="live-score rival">
+              <span className="live-score-label">{rivalName}</span>
+              <span className="live-score-value rival">
+                {Math.round(rivalScore).toLocaleString()}
+              </span>
+            </div>
+          )}
           <div className="live-combo">
             <span className={`live-judge ${meterClass}`}>{tick.label}</span>
             {tick.combo > 0 && (
@@ -318,7 +355,7 @@ export function LiveChartMatch({
       </div>
 
       <div className="live-actions">
-        {!playing && !finished && (
+        {!controlled && !playing && !finished && (
           <button
             type="button"
             className="btn primary"
@@ -328,30 +365,26 @@ export function LiveChartMatch({
             Start
           </button>
         )}
+        {controlled && !playing && !finished && (
+          <p className="meta-sub">Waiting for match start…</p>
+        )}
         {playing && (
           <button type="button" className="btn danger" onClick={stopEarly}>
             End early
           </button>
         )}
-        {finished && (
-          <>
-            <button
-              type="button"
-              className="btn primary"
-              onClick={() => void start()}
-            >
-              Retry
-            </button>
-            {onExit && (
-              <button type="button" className="btn ghost" onClick={onExit}>
-                Back to library
-              </button>
-            )}
-          </>
+        {finished && !controlled && (
+          <button
+            type="button"
+            className="btn primary"
+            onClick={() => void start()}
+          >
+            Retry
+          </button>
         )}
-        {!playing && !finished && onExit && (
+        {(finished || (!playing && !finished)) && onExit && (
           <button type="button" className="btn ghost" onClick={onExit}>
-            Back
+            {mode === "battle" ? "Leave battle" : finished ? "Back to library" : "Back"}
           </button>
         )}
       </div>
