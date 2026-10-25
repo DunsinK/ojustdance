@@ -1,3 +1,4 @@
+import { DanceSkeleton, MediaPipeStyleAdapter } from '@ojustdance/skeleton';
 import { DrawingUtils, type PoseLandmarker } from "@mediapipe/tasks-vision";
 import { useEffect, useRef, useState } from "react";
 import { createPoseLandmarker, PoseLandmarker as PL } from "./createPoseLandmarker";
@@ -5,6 +6,8 @@ import { normalizePose } from "./normalizePose";
 import type { ModelKey, PoseFrame } from "./types";
 
 export type PoseSourceMode = "camera" | "file";
+const canonicalAdapter = new MediaPipeStyleAdapter();
+const canonicalSkeleton = new DanceSkeleton();
 
 type Options = {
   mode: PoseSourceMode;
@@ -16,6 +19,8 @@ type Options = {
   mirror?: boolean;
   /** When false, keep the landmarker but skip the live rAF detect loop. */
   liveDetect?: boolean;
+  /** Battle presentation consumes the shared skeleton; other callers keep their existing path. */
+  includeCanonical?: boolean;
   onFrame?: (frame: PoseFrame) => void;
 };
 
@@ -26,6 +31,7 @@ export function usePoseSource({
   model = "lite",
   mirror,
   liveDetect = true,
+  includeCanonical = false,
   onFrame,
 }: Options) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -159,7 +165,7 @@ export function usePoseSource({
             if (ctx) {
               ctx.clearRect(0, 0, canvas.width, canvas.height);
               const drawing = new DrawingUtils(ctx);
-              for (const landmarks of result.landmarks) {
+              for (const landmarks of includeCanonical ? [] : result.landmarks) {
                 drawing.drawConnectors(landmarks, PL.POSE_CONNECTIONS, {
                   color: "#c8f542",
                   lineWidth: 3,
@@ -182,7 +188,29 @@ export function usePoseSource({
             }
             setFps(frameTimes.length);
 
+            let canonicalFrame;
+            if (includeCanonical && raw?.length) {
+              try { canonicalFrame = canonicalAdapter.toFrame({ schemaVersion: 'mediapipe-style/1', timestampMs: now,
+                timeline: { origin: 'session-start', id: 'live-presentation' }, space: 'normalized-image',
+                imageSize: { width: videoEl.videoWidth, height: videoEl.videoHeight }, depth: 'preserve-estimate', mirrored: false, landmarks: raw }); }
+              catch { /* Invalid provider frames remain unavailable; the next camera frame can recover. */ }
+            }
+            if (includeCanonical && canonicalFrame && ctx) {
+              const pose = canonicalSkeleton.constructPose(canonicalFrame);
+              ctx.strokeStyle = '#d7ff52'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+              for (const bone of canonicalSkeleton.validEdges(pose)) {
+                const a = pose.joints[bone.parent].position!, b = pose.joints[bone.child].position!;
+                ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+              }
+              for (const joint of Object.values(pose.joints)) {
+                const point = joint.position ?? canonicalFrame.observations[joint.name]?.position;
+                if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) continue;
+                ctx.fillStyle = joint.valid ? '#f4ffe3' : '#9a9da044';
+                ctx.beginPath(); ctx.arc(point.x, point.y, joint.valid ? 3 : 2, 0, Math.PI * 2); ctx.fill();
+              }
+            }
             onFrameRef.current?.({
+              canonicalFrame,
               t: mode === "file" ? videoEl.currentTime : now / 1000,
               landmarks: pose ? normalizePose(raw) : [],
               hasPose: pose,
@@ -219,7 +247,7 @@ export function usePoseSource({
       }
       setReady(false);
     };
-  }, [active, mode, fileUrl, model]);
+  }, [active, mode, fileUrl, model, includeCanonical]);
 
   return {
     videoRef,

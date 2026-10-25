@@ -1,3 +1,4 @@
+import { readStoredCues } from '../performance/reference';
 import type { ChartDocument, ChartSample } from "./types";
 
 function isSample(value: unknown): value is ChartSample {
@@ -31,6 +32,7 @@ export function parseChartDocument(raw: unknown): ChartDocument {
 
   return {
     version: 1,
+    referenceCues: readStoredCues(record.motionThumbnails, 1200),
     sampleRateHz:
       typeof record.sampleRateHz === "number" ? record.sampleRateHz : 15,
     durationSec,

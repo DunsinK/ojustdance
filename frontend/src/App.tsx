@@ -7,6 +7,7 @@ import { Home } from "./pages/Home";
 import { Map } from "./pages/Map";
 import { SoloBattles } from "./pages/SoloBattles";
 import { SkeletonDebug } from "./pages/SkeletonDebug";
+import { EffectsProvider } from './performance/EffectsProvider';
 
 export default function App() {
   return (
@@ -15,7 +16,7 @@ export default function App() {
         <Route path="skeleton-debug" element={<SkeletonDebug />} />
         <Route index element={<Home />} />
         <Route element={<Layout />}>
-          <Route path="battle" element={<Battle />} />
+          <Route path="battle" element={<EffectsProvider><Battle /></EffectsProvider>} />
           <Route path="solo" element={<SoloBattles />} />
           <Route path="map" element={<Map />} />
           <Route path="charts" element={<Charts />} />

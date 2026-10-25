@@ -1,7 +1,10 @@
+import type { SkeletonFrame } from '@ojustdance/skeleton';
+import type { ReferenceCue } from '../performance/contracts.js';
 /** Relative landmark: [x, y, z, visibility] */
 export type RelativeLandmark = [number, number, number, number];
 
 export type PoseFrame = {
+  canonicalFrame?: SkeletonFrame;
   /** Wall / session time in seconds (caller-defined clock). */
   t: number;
   landmarks: RelativeLandmark[];
@@ -11,6 +14,8 @@ export type PoseFrame = {
 export type ModelKey = "lite" | "full" | "heavy";
 
 export type ChartSample = {
+  sourceTimeSec?: number;
+  canonicalFrame?: SkeletonFrame;
   t: number;
   landmarks: RelativeLandmark[];
 };
@@ -23,6 +28,7 @@ export type TimelineSegment = {
 };
 
 export type ChartDocument = {
+  referenceCues?: ReferenceCue[];
   version: 1;
   sampleRateHz: number;
   durationSec: number;

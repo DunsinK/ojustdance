@@ -4,7 +4,7 @@ Festival-style landing (Vedik UI) plus functional Map / Solo / Battle flows (Med
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 22+
 
 ## Setup
 
@@ -43,3 +43,10 @@ Restart Vite after changing `.env`.
 
 - Design docs (`DESIGN.md`, `ENTRY-REFINEMENT.md`, etc.) and `src/screens/*` demo UI are kept for reference; production navigation uses React Router + `src/pages/*`.
 - Shared pose package: `@ojustdance/skeleton` under `../shared/skeleton`.
+
+## Battle effects
+
+The Battle route uses the home page’s visual style with animated cues, tracking
+feedback, judgments, combos, audio-reactive lighting, and configurable intensity.
+Home and Solo are unchanged. See [Battle presentation](src/performance/README.md)
+for the event flow, provisional scoring policy, controls, and tests.

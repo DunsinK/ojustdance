@@ -20,7 +20,12 @@ const maxVideoMb = Number(env("MAX_VIDEO_UPLOAD_MB", "500"));
 
 export const config = {
   port: Number(env("PORT", "3001")),
-  frontendOrigin: env("FRONTEND_ORIGIN", "http://localhost:5173"),
+  host: env("HOST") || undefined,
+  skipDatabaseInit: env("SKIP_DB_INIT") === "1",
+  frontendOrigin: env("FRONTEND_ORIGIN", "http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
+    .filter(Boolean),
   supabaseUrl: env("SUPABASE_URL"),
   supabaseSecretKey: env("SUPABASE_SECRET_KEY") || env("SUPABASE_SERVICE_ROLE_KEY"),
   databaseUrl: normalizeDatabaseUrl(env("SUPABASE_DIRECT_CONNECTION_KEY")),
