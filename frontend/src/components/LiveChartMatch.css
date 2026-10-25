@@ -194,90 +194,135 @@
   object-fit: contain;
 }
 
-/* Battle preview: big chart center, you as side PIP */
-.live-match.layout-preview .live-match-stages {
-  grid-template-columns: 1fr;
-  grid-template-rows: minmax(280px, 1fr) auto;
-  position: relative;
-  min-height: min(68vh, 640px);
-}
-
-.live-match.layout-preview .live-pane--chart {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.live-match.layout-preview .live-pane--chart .live-ref-video {
-  min-height: min(52vh, 520px);
-  aspect-ratio: 16 / 9;
-  border-radius: 16px;
-  border: 1px solid var(--line, #343b47);
-}
-
-.live-match.layout-preview .live-pane--you {
-  position: absolute;
-  right: 1rem;
-  bottom: 1rem;
-  width: min(240px, 38vw);
-  z-index: 5;
-  padding: 0.45rem;
-  border-radius: 14px;
-  border: 1px solid rgba(215, 255, 82, 0.35);
-  background: rgba(11, 16, 22, 0.88);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-}
-
-.live-match.layout-preview .live-pane--you .pose-stage {
-  aspect-ratio: 4 / 3;
+/* Active play uses the space below navigation, without growing with the videos. */
+.play-session .live-match {
+  flex: 1;
   min-height: 0;
+  gap: 0.5rem;
 }
 
-.live-match.layout-preview .live-pane--rival {
-  display: none;
+.play-session .live-match .live-match-head {
+  flex: none;
+  align-items: center;
+  gap: 0.5rem 1rem;
 }
 
-/* Battle fight: chart center, you BL, rival BR */
-.live-match.layout-fight .live-match-stages,
-.live-match.layout-done .live-match-stages {
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: minmax(240px, 1.35fr) auto;
+.play-session .live-match .live-match-head > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.play-session .live-match .live-match-head h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(1rem, 2.4vw, 1.5rem);
+}
+
+.play-session .live-match .live-scoreboard {
+  min-width: 0;
+  max-width: 100%;
+  gap: 0.75rem;
+}
+
+.play-session .live-match .live-score-label {
+  max-width: min(24vw, 10rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.play-session .live-match .live-score-value {
+  font-size: clamp(1.25rem, 3vw, 2rem);
+}
+
+.play-session .live-match .live-match-stages {
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.play-session .live-match.mode-battle .live-match-stages {
+  grid-template-rows: minmax(0, 1.35fr) minmax(0, 1fr);
   grid-template-areas:
     "chart chart"
     "you rival";
-  gap: 0.85rem;
-  min-height: min(70vh, 680px);
 }
 
-.live-match.layout-fight .live-pane--chart,
-.live-match.layout-done .live-pane--chart {
+.play-session .live-match.mode-battle .live-pane--chart {
   grid-area: chart;
 }
 
-.live-match.layout-fight .live-pane--you,
-.live-match.layout-done .live-pane--you {
+.play-session .live-match.mode-battle .live-pane--you {
   grid-area: you;
 }
 
-.live-match.layout-fight .live-pane--rival,
-.live-match.layout-done .live-pane--rival {
+.play-session .live-match.mode-battle .live-pane--rival {
   grid-area: rival;
 }
 
-.live-match.layout-fight .live-pane--chart .live-ref-video,
-.live-match.layout-done .live-pane--chart .live-ref-video {
-  min-height: min(42vh, 420px);
-  aspect-ratio: 16 / 9;
-  border-radius: 16px;
-  border: 1px solid var(--line, #343b47);
+.play-session .live-match .live-pane {
+  min-height: 0;
+  gap: 0.25rem;
 }
 
-.live-match.layout-fight .live-pane--you .pose-stage,
-.live-match.layout-done .live-pane--you .pose-stage {
-  aspect-ratio: 16 / 10;
-  min-height: 160px;
+.play-session .live-match .live-pane-bar,
+.play-session .live-match .live-pane-label {
+  flex: none;
+}
+
+.play-session .live-match .live-ref-video,
+.play-session .live-match .pose-stage,
+.play-session .live-match .live-rival-video-wrap,
+.play-session .live-match .live-rival-card {
+  flex: 1;
+  width: 100%;
+  height: 0;
+  min-height: 0;
+  aspect-ratio: auto;
   border-radius: 12px;
-  overflow: hidden;
-  border: 2px solid rgba(215, 255, 82, 0.45);
+}
+
+.play-session .live-match .live-ref-video,
+.play-session .live-match .pose-stage video,
+.play-session .live-match .pose-stage canvas,
+.play-session .live-match .live-rival-video {
+  object-fit: contain;
+}
+
+.play-session .live-match .live-meter,
+.play-session .live-match .live-progress,
+.play-session .live-match .live-actions,
+.play-session .live-match .live-result {
+  flex: none;
+}
+
+.play-session .live-match .live-progress {
+  margin-bottom: 1rem;
+}
+
+.play-session .live-match .live-actions {
+  align-items: center;
+  margin-top: 0;
+}
+
+.play-session .live-match .live-actions .btn {
+  min-height: 36px;
+  padding: 0.35rem 0.75rem;
+}
+
+.play-session .live-match .live-actions .meta-sub {
+  flex: 1;
+  font-size: 0.75rem;
+}
+
+.play-session .live-match .live-ritual-banner {
+  top: 4rem;
+  max-width: calc(100% - 1rem);
+  white-space: normal;
+  text-align: center;
 }
 
 .live-pane {
@@ -518,25 +563,22 @@
 }
 
 @media (max-width: 860px) {
-  .live-match.mode-solo .live-match-stages {
-    grid-template-columns: 1fr;
+  .play-session .live-match.mode-solo .live-match-stages {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Short landscape screens have more room beside the routine than below it. */
+@media (min-aspect-ratio: 3 / 2) and (max-height: 600px) {
+  .play-session .live-match.mode-battle .live-match-stages {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "you chart rival";
   }
 
-  .live-match.layout-preview .live-pane--you {
-    position: relative;
-    right: auto;
-    bottom: auto;
-    width: 100%;
-    margin-top: 0.5rem;
-  }
-
-  .live-match.layout-fight .live-match-stages,
-  .live-match.layout-done .live-match-stages {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "chart"
-      "you"
-      "rival";
-    min-height: 0;
+  .play-session .live-match.mode-solo .live-match-stages {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
   }
 }

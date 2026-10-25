@@ -68,3 +68,26 @@
     justify-content: flex-start;
   }
 }
+
+/* Let the active match use the remaining viewport, including mobile browser UI. */
+.shell:has(> .play-session) {
+  height: 100dvh;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.shell:has(> .play-session) .topbar {
+  flex: none;
+  padding: 0.5rem 0;
+}
+
+@media (max-width: 640px) {
+  .shell:has(> .play-session) .topbar {
+    gap: 0.25rem;
+  }
+
+  .shell:has(> .play-session) .nav-link {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+  }
+}
