@@ -107,7 +107,7 @@ export function SoloBattles() {
 
   if (phase === "play" && activeChart) {
     return (
-      <main className="page solo-page">
+      <main className="page solo-page play-session">
         <LiveChartMatch
           mode="solo"
           chart={activeChart}

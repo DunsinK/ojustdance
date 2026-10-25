@@ -182,7 +182,7 @@ export function Battle() {
 
   if ((phase === "matched" || phase === "live") && chart && match) {
     return (
-      <main className="page battle">
+      <main className="page battle play-session">
         <LiveChartMatch
           mode="battle"
           controlled

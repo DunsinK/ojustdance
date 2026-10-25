@@ -326,3 +326,18 @@
     gap: 0.25rem;
   }
 }
+
+.page.play-session {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem 0;
+}
+
+.play-session > .battle-status {
+  flex: none;
+  margin: 0;
+  font-size: 0.75rem;
+}

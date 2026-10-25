@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import WebSocket from "ws";
 import { config } from "./config.js";
 
 let client = null;
@@ -12,6 +13,8 @@ export function getSupabase() {
   if (!client) {
     client = createClient(config.supabaseUrl, config.supabaseSecretKey, {
       auth: { persistSession: false, autoRefreshToken: false },
+      // Older Node runtimes need a transport even for REST-only client usage.
+      realtime: { transport: WebSocket },
     });
   }
   return client;
