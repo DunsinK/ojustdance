@@ -13,7 +13,8 @@ const httpServer = createServer(app);
 
 app.use(
   cors({
-    origin: config.frontendOrigin,
+    origin: config.frontendOrigins,
+    credentials: true,
   })
 );
 app.use(express.json({ limit: "2mb" }));
@@ -47,7 +48,7 @@ async function boot() {
 
   httpServer.listen(config.port, () => {
     console.log(`API on http://localhost:${config.port}`);
-    console.log(`Socket.io ready (CORS ${config.frontendOrigin})`);
+    console.log(`Socket.io ready (CORS ${config.frontendOrigins.join(", ")})`);
   });
 }
 

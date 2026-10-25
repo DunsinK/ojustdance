@@ -10,8 +10,11 @@ import {
   timelineDuration,
 } from "../pose/exportChart";
 import {
+  combineAVStreams,
+  createMusicBed,
   startSessionRecorder,
   videoExtension,
+  type MusicBed,
   type SessionRecorder,
 } from "../pose/mediaRecord";
 import { PoseStage } from "../pose/PoseStage";
@@ -57,6 +60,8 @@ export function Map() {
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishedId, setPublishedId] = useState<string | null>(null);
+  const [musicName, setMusicName] = useState<string | null>(null);
+  const [musicUrl, setMusicUrl] = useState<string | null>(null);
 
   const transportRef = useRef(transport);
   const playheadRef = useRef(playheadSec);
@@ -67,6 +72,8 @@ export function Map() {
   const clockRafRef = useRef(0);
   const sessionRecorderRef = useRef<SessionRecorder | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const musicInputRef = useRef<HTMLInputElement | null>(null);
+  const musicBedRef = useRef<MusicBed | null>(null);
   const analyzeAbortRef = useRef<AbortController | null>(null);
 
   transportRef.current = transport;
@@ -121,11 +128,89 @@ export function Map() {
 
   useEffect(() => {
     return () => {
-      if (fileUrl) URL.revokeObjectURL(fileUrl);
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
       analyzeAbortRef.current?.abort();
+      const bed = musicBedRef.current;
+      musicBedRef.current = null;
+      if (bed) {
+        bed.audio.pause();
+        bed.dispose();
+      }
     };
-  }, [fileUrl, previewUrl]);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (fileUrl) URL.revokeObjectURL(fileUrl);
+    };
+  }, [fileUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  function clearMusicBed() {
+    if (captureArmed || transport === "recording") {
+      alert("Stop the current capture before changing the music track.");
+      return;
+    }
+    const bed = musicBedRef.current;
+    musicBedRef.current = null;
+    if (bed) {
+      bed.audio.pause();
+      bed.dispose();
+    }
+    if (musicUrl) URL.revokeObjectURL(musicUrl);
+    setMusicUrl(null);
+    setMusicName(null);
+  }
+
+  function onImportMusic(file: File) {
+    if (captureArmed || transport === "recording") {
+      alert("Stop the current capture before changing the music track.");
+      return;
+    }
+    const bed = musicBedRef.current;
+    musicBedRef.current = null;
+    if (bed) {
+      bed.audio.pause();
+      bed.dispose();
+    }
+    if (musicUrl) URL.revokeObjectURL(musicUrl);
+
+    const url = URL.createObjectURL(file);
+    const audio = new Audio(url);
+    audio.preload = "auto";
+    audio.loop = false;
+    try {
+      musicBedRef.current = createMusicBed(audio);
+      setMusicUrl(url);
+      setMusicName(file.name);
+    } catch (err) {
+      URL.revokeObjectURL(url);
+      setMusicUrl(null);
+      setMusicName(null);
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Could not load music");
+    }
+  }
+
+  async function syncMusic(play: boolean, reset = false) {
+    const bed = musicBedRef.current;
+    if (!bed) return;
+    if (reset) bed.audio.currentTime = 0;
+    if (play) {
+      try {
+        await bed.resumeContext();
+        await bed.audio.play();
+      } catch (err) {
+        console.warn("Music playback blocked:", err);
+      }
+    } else {
+      bed.audio.pause();
+    }
+  }
 
   useEffect(() => {
     if (transport !== "recording" || mode !== "camera") {
@@ -265,16 +350,23 @@ export function Map() {
       if (!stream) throw new Error("No camera stream to record");
 
       if (!sessionRecorderRef.current) {
-        sessionRecorderRef.current = startSessionRecorder(stream);
+        const musicStream = musicBedRef.current?.stream ?? null;
+        const recordStream = combineAVStreams(stream, musicStream);
+        sessionRecorderRef.current = startSessionRecorder(recordStream, {
+          withAudio: Boolean(musicStream),
+        });
         setCaptureArmed(true);
+        await syncMusic(true, true);
       } else {
         sessionRecorderRef.current.resume();
+        await syncMusic(true, false);
       }
     } catch (err) {
       console.error(err);
       alert(err instanceof Error ? err.message : "Could not start video capture");
       setTransport("idle");
       activeSegIdRef.current = null;
+      void syncMusic(false);
     }
   }
 
@@ -282,11 +374,13 @@ export function Map() {
     setTransport("paused");
     activeSegIdRef.current = null;
     sessionRecorderRef.current?.pause();
+    void syncMusic(false);
   }
 
   async function stopSession() {
     setTransport("idle");
     activeSegIdRef.current = null;
+    void syncMusic(false, true);
     const recorder = sessionRecorderRef.current;
     sessionRecorderRef.current = null;
     setCaptureArmed(false);
@@ -369,7 +463,11 @@ export function Map() {
   else if (analyzing) status = `Analyzing video… ${analyzePct}%`;
   else if (stageActive && !ready) status = "Loading MediaPipe…";
   else if (ready && transport === "recording")
-    status = hasPose ? "Recording pose + video" : "Recording — no body in frame";
+    status = hasPose
+      ? musicName
+        ? "Recording pose + video + music"
+        : "Recording pose + video"
+      : "Recording — no body in frame";
   else if (ready && mode === "file")
     status = hasPose
       ? `Imported · tracking ${fps} FPS`
@@ -549,6 +647,54 @@ export function Map() {
               }
             }}
           />
+
+          <div className="map-music">
+            <div className="map-music-copy">
+              <h3>Music bed</h3>
+              <p>
+                Import an MP3 to play while you record. It muxes into the preview
+                video on Stop.
+              </p>
+              {musicName ? (
+                <p className="map-music-file" title={musicName}>
+                  ♪ {musicName}
+                </p>
+              ) : (
+                <p className="hint">No track yet — optional for camera takes.</p>
+              )}
+            </div>
+            <div className="map-music-actions">
+              <input
+                ref={musicInputRef}
+                type="file"
+                accept="audio/mpeg,audio/mp3,.mp3,audio/*"
+                hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) onImportMusic(file);
+                }}
+              />
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={captureArmed || transport === "recording"}
+                onClick={() => musicInputRef.current?.click()}
+              >
+                {musicName ? "Replace MP3" : "Import MP3"}
+              </button>
+              {musicName && (
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={captureArmed || transport === "recording"}
+                  onClick={clearMusicBed}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         <aside className="map-side map-panel">
@@ -623,7 +769,6 @@ export function Map() {
                 src={previewUrl}
                 controls
                 playsInline
-                muted
               />
             ) : (
               <p className="hint">

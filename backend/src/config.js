@@ -18,9 +18,23 @@ export function normalizeDatabaseUrl(raw) {
 /** Default 500 MB — override with MAX_VIDEO_UPLOAD_MB in .env */
 const maxVideoMb = Number(env("MAX_VIDEO_UPLOAD_MB", "500"));
 
+/** Comma-separated FRONTEND_ORIGIN list. Trailing slashes stripped (Origin never has them). */
+function parseOrigins(raw) {
+  return String(raw || "")
+    .split(",")
+    .map((s) => s.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+}
+
+const frontendOrigins = parseOrigins(
+  env("FRONTEND_ORIGIN", "http://localhost:5173")
+);
+
 export const config = {
   port: Number(env("PORT", "3001")),
-  frontendOrigin: env("FRONTEND_ORIGIN", "http://localhost:5173"),
+  /** @deprecated Prefer frontendOrigins — kept as first allowed origin for logs */
+  frontendOrigin: frontendOrigins[0] || "http://localhost:5173",
+  frontendOrigins,
   supabaseUrl: env("SUPABASE_URL"),
   supabaseSecretKey: env("SUPABASE_SECRET_KEY") || env("SUPABASE_SERVICE_ROLE_KEY"),
   databaseUrl: normalizeDatabaseUrl(env("SUPABASE_DIRECT_CONNECTION_KEY")),

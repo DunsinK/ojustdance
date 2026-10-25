@@ -9,8 +9,9 @@ import { registerMatchmaking } from "./matchmaking.js";
 export function attachRealtime(httpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: config.frontendOrigin,
+      origin: config.frontendOrigins,
       methods: ["GET", "POST"],
+      credentials: true,
     },
   });
 

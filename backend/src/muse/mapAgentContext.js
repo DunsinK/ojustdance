@@ -15,8 +15,10 @@ Map is the chart editor. Goal: capture dance poses into a timeline, attach a pre
    - Import runs MediaPipe offline across the file and uses that video as the preview.
 2. **Capture (camera)**
    - Record starts sampling poses (~15 Hz) while a session recorder captures video.
-   - Pause freezes the take; Stop finalizes the preview blob and ends the session.
+   - Optional: Import MP3 as a music bed under the stage — it plays while recording and is muxed into the preview WebM on Stop.
+   - Pause freezes the take (and pauses music); Stop finalizes the preview blob and ends the session.
    - Step fully into frame so landmarks are visible (skeleton overlay).
+   - Change/clear music only when a capture session is not armed.
 3. **Import / file mode**
    - Import analyzes the whole file into one timeline segment.
    - Re-analyze re-runs pose extraction if needed.
