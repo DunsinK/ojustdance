@@ -128,6 +128,17 @@ export function registerMatchmaking(io, socket) {
     socket.emit("match:readyAck", { matchId });
   });
 
+  /** Relay WebRTC offer/answer/ICE between the two players in a match. */
+  socket.on("webrtc:signal", ({ matchId, signal } = {}) => {
+    if (!matchId || !signal) return;
+    const match = matches.get(matchId);
+    if (!match) return;
+    if (!playerIdForSocket(match, socket.id)) return;
+    const rivalSocket = rivalSocketId(match, socket.id);
+    if (!rivalSocket) return;
+    io.to(rivalSocket).emit("webrtc:signal", { matchId, signal });
+  });
+
   socket.on("match:score", ({ matchId, score } = {}) => {
     const match = matches.get(matchId);
     if (!match) return;

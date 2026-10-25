@@ -17,6 +17,12 @@ function formatDuration(sec: number | null) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+function displayTitle(title: string | null | undefined) {
+  const t = (title || "").trim();
+  if (!t || /^untitled chart$/i.test(t)) return "Untitled dance";
+  return t;
+}
+
 type Phase = "browse" | "loading" | "play";
 
 export function SoloBattles() {
@@ -116,33 +122,40 @@ export function SoloBattles() {
 
   return (
     <main className="page solo-page">
-      <header className="page-head">
-        <h1>Solo Battles</h1>
-        <p>
-          Pick a mapped chart, dance along on camera, and watch your score climb
-          when you match the moves.
-        </p>
+      <header className="solo-head">
+        <div>
+          <span className="solo-kicker">Practice · One player</span>
+          <h1>Solo</h1>
+          <p>
+            Pick a dance, match the moves on camera, and climb your score — no
+            opponent needed.
+          </p>
+        </div>
+        <div className="solo-head-actions">
+          <Link to="/dances" className="btn ghost">
+            Browse dances
+          </Link>
+          <Link to="/map" className="btn ghost">
+            Map yours
+          </Link>
+        </div>
       </header>
 
-      {loading && <p className="meta-sub">Loading charts…</p>}
-      {error && (
-        <p className="api-error">
-          {error} — is the API running on :3001?
-        </p>
-      )}
+      {loading && <p className="solo-status">Loading dances…</p>}
+      {error && <p className="api-error">{error}</p>}
       {loadError && <p className="api-error">{loadError}</p>}
 
       {lastResult && phase === "browse" && (
-        <p className="solo-last-result">
-          Last run: {lastResult.score.toLocaleString()} pts · max combo{" "}
-          {lastResult.maxCombo} · {Math.round(lastResult.avgAccuracy * 100)}%
-          match
-        </p>
+        <div className="solo-last-result" role="status">
+          <strong>Last run · {lastResult.score.toLocaleString()} pts</strong>
+          <span>Max combo {lastResult.maxCombo}</span>
+          <span>{Math.round(lastResult.avgAccuracy * 100)}% match</span>
+        </div>
       )}
 
       {!loading && !error && charts.length === 0 && (
         <div className="solo-empty">
-          <p>No dances yet.</p>
+          <p>No dances in the library yet.</p>
           <Link to="/map" className="btn primary">
             Map one
           </Link>
@@ -151,47 +164,43 @@ export function SoloBattles() {
 
       {charts.length > 0 && (
         <section className="solo-layout">
-          <ul className="solo-list">
-            {charts.map((chart) => (
-              <li key={chart.id}>
-                <button
-                  type="button"
-                  className={
-                    selectedId === chart.id ? "solo-card selected" : "solo-card"
-                  }
-                  onClick={() => setSelectedId(chart.id)}
-                >
-                  <span className="solo-card-title">{chart.title}</span>
-                  <span className="solo-card-meta">
-                    {chart.difficulty} · {formatDuration(chart.durationSec)}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          <aside className="solo-detail">
+          <div className="solo-stage">
             {selected ? (
               <>
-                <h2>{selected.title}</h2>
-                <p className="meta-sub">
-                  {selected.difficulty} · {formatDuration(selected.durationSec)} ·{" "}
-                  {selected.model || "model n/a"}
-                </p>
+                <div className="solo-stage-top">
+                  <div>
+                    <h2>{displayTitle(selected.title)}</h2>
+                    <div className="solo-stage-meta">
+                      <span className="solo-chip solo-chip--lime">
+                        {selected.difficulty}
+                      </span>
+                      <span className="solo-chip">
+                        {formatDuration(selected.durationSec)}
+                      </span>
+                      <span className="solo-chip">
+                        {selected.model || "lite"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-                {selected.videoUrl ? (
-                  <video
-                    className="solo-preview"
-                    src={selected.videoUrl}
-                    controls
-                    playsInline
-                    muted
-                  />
-                ) : (
-                  <div className="solo-preview placeholder">No preview video</div>
-                )}
+                <div className="solo-preview-wrap">
+                  {selected.videoUrl ? (
+                    <video
+                      className="solo-preview"
+                      src={selected.videoUrl}
+                      controls
+                      playsInline
+                      muted
+                    />
+                  ) : (
+                    <div className="solo-preview placeholder">
+                      No preview video
+                    </div>
+                  )}
+                </div>
 
-                <div className="page-actions">
+                <div className="solo-stage-actions">
                   <button
                     type="button"
                     className="btn primary"
@@ -200,14 +209,54 @@ export function SoloBattles() {
                   >
                     {phase === "loading" ? "Loading…" : "Start solo"}
                   </button>
-                  <Link to="/map" className="btn ghost">
-                    Map another
+                  <Link to="/battle" className="btn ghost">
+                    Find a battle
                   </Link>
                 </div>
               </>
             ) : (
-              <p className="hint">Select a chart to preview.</p>
+              <div className="solo-preview placeholder" style={{ margin: "1rem" }}>
+                Select a dance to preview
+              </div>
             )}
+          </div>
+
+          <aside className="solo-rail">
+            <p className="solo-rail-label">Your library</p>
+            <ul className="solo-list">
+              {charts.map((chart) => (
+                <li key={chart.id}>
+                  <button
+                    type="button"
+                    className={
+                      selectedId === chart.id ? "solo-card selected" : "solo-card"
+                    }
+                    onClick={() => setSelectedId(chart.id)}
+                  >
+                    <span className="solo-card-thumb" aria-hidden="true">
+                      {chart.videoUrl ? (
+                        <video
+                          src={chart.videoUrl}
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                      ) : (
+                        <span className="solo-card-thumb-fallback">Dance</span>
+                      )}
+                    </span>
+                    <span className="solo-card-copy">
+                      <span className="solo-card-title">
+                        {displayTitle(chart.title)}
+                      </span>
+                      <span className="solo-card-meta">
+                        {chart.difficulty} · {formatDuration(chart.durationSec)}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </aside>
         </section>
       )}

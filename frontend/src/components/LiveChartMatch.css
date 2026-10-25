@@ -173,11 +173,207 @@
   gap: 1rem;
 }
 
+/* Solo / default: chart | you */
+.live-match.mode-solo .live-pane--rival {
+  display: none;
+}
+
+/* Battle preview: big chart center, you as side PIP */
+.live-match.layout-preview .live-match-stages {
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(280px, 1fr) auto;
+  position: relative;
+  min-height: min(68vh, 640px);
+}
+
+.live-match.layout-preview .live-pane--chart {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.live-match.layout-preview .live-pane--chart .live-ref-video {
+  min-height: min(52vh, 520px);
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  border: 1px solid var(--line, #343b47);
+}
+
+.live-match.layout-preview .live-pane--you {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  width: min(240px, 38vw);
+  z-index: 5;
+  padding: 0.45rem;
+  border-radius: 14px;
+  border: 1px solid rgba(215, 255, 82, 0.35);
+  background: rgba(11, 16, 22, 0.88);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.live-match.layout-preview .live-pane--you .pose-stage {
+  aspect-ratio: 4 / 3;
+  min-height: 0;
+}
+
+.live-match.layout-preview .live-pane--rival {
+  display: none;
+}
+
+/* Battle fight: chart center, you BL, rival BR */
+.live-match.layout-fight .live-match-stages,
+.live-match.layout-done .live-match-stages {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: minmax(240px, 1.35fr) auto;
+  grid-template-areas:
+    "chart chart"
+    "you rival";
+  gap: 0.85rem;
+  min-height: min(70vh, 680px);
+}
+
+.live-match.layout-fight .live-pane--chart,
+.live-match.layout-done .live-pane--chart {
+  grid-area: chart;
+}
+
+.live-match.layout-fight .live-pane--you,
+.live-match.layout-done .live-pane--you {
+  grid-area: you;
+}
+
+.live-match.layout-fight .live-pane--rival,
+.live-match.layout-done .live-pane--rival {
+  grid-area: rival;
+}
+
+.live-match.layout-fight .live-pane--chart .live-ref-video,
+.live-match.layout-done .live-pane--chart .live-ref-video {
+  min-height: min(42vh, 420px);
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  border: 1px solid var(--line, #343b47);
+}
+
+.live-match.layout-fight .live-pane--you .pose-stage,
+.live-match.layout-done .live-pane--you .pose-stage {
+  aspect-ratio: 16 / 10;
+  min-height: 160px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(215, 255, 82, 0.45);
+}
+
 .live-pane {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
   min-width: 0;
+  position: relative;
+}
+
+.live-pip-score {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.65rem;
+  margin: 0;
+  padding: 0.25rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(11, 16, 22, 0.82);
+  color: var(--lime, #d7ff52);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.live-rival-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  aspect-ratio: 16 / 10;
+  min-height: 160px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 81, 72, 0.45);
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 81, 72, 0.18), transparent 55%),
+    #12161e;
+  text-align: center;
+  padding: 1rem;
+}
+
+.live-rival-letter {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 50%;
+  background: rgba(255, 81, 72, 0.2);
+  color: var(--coral-text, #ff817a);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.5rem;
+}
+
+.live-rival-name {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.live-rival-score {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  letter-spacing: -0.04em;
+  color: var(--coral, #ff5148);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.live-rival-hint {
+  font-size: 0.72rem;
+  color: var(--muted, #a9afbd);
+  letter-spacing: 0.04em;
+}
+
+.live-rival-video-wrap {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  min-height: 160px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 81, 72, 0.45);
+  background: #0a0d12;
+}
+
+.live-rival-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scaleX(-1);
+}
+
+.live-pip-score--rival {
+  color: var(--coral-text, #ff817a);
+}
+
+.live-rival-connecting {
+  position: absolute;
+  left: 0.65rem;
+  top: 0.65rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(11, 16, 22, 0.8);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #a9afbd);
 }
 
 .live-pane-bar {
@@ -302,7 +498,25 @@
 }
 
 @media (max-width: 860px) {
-  .live-match-stages {
+  .live-match.mode-solo .live-match-stages {
     grid-template-columns: 1fr;
+  }
+
+  .live-match.layout-preview .live-pane--you {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .live-match.layout-fight .live-match-stages,
+  .live-match.layout-done .live-match-stages {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "chart"
+      "you"
+      "rival";
+    min-height: 0;
   }
 }

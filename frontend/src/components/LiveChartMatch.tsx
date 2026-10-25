@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useBattleRtc } from "../lib/battleRtc";
 import {
   applyScoreTick,
   gradePose,
@@ -31,6 +32,8 @@ type Props = {
   rivalName?: string;
   /** Hide local Start/Retry (parent drives lifecycle). */
   controlled?: boolean;
+  matchId?: string | null;
+  role?: "a" | "b" | null;
 };
 
 type RitualPhase =
@@ -79,8 +82,11 @@ export function LiveChartMatch({
   rivalScore = null,
   rivalName = "Rival",
   controlled = false,
+  matchId = null,
+  role = null,
 }: Props) {
   const refVideoRef = useRef<HTMLVideoElement | null>(null);
+  const rivalVideoRef = useRef<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [finished, setFinished] = useState(false);
   const [chartTime, setChartTime] = useState(0);
@@ -90,6 +96,9 @@ export function LiveChartMatch({
   const [mirrorChart, setMirrorChart] = useState(true);
   const [ritual, setRitual] = useState<RitualPhase>("idle");
   const [countDigit, setCountDigit] = useState<number | null>(null);
+  const [localVideoStream, setLocalVideoStream] = useState<MediaStream | null>(
+    null
+  );
 
   const liveLandmarksRef = useRef<RelativeLandmark[]>([]);
   const hasPoseRef = useRef(false);
@@ -114,14 +123,40 @@ export function LiveChartMatch({
     1,
   );
 
-  const { videoRef, canvasRef, ready, error, hasPose, fps } = usePoseSource({
-    mode: "camera",
-    enabled: true,
-    onFrame: (frame) => {
-      hasPoseRef.current = frame.hasPose;
-      if (frame.hasPose) liveLandmarksRef.current = frame.landmarks;
-    },
+  const { videoRef, canvasRef, streamRef, ready, error, hasPose, fps } =
+    usePoseSource({
+      mode: "camera",
+      enabled: true,
+      onFrame: (frame) => {
+        hasPoseRef.current = frame.hasPose;
+        if (frame.hasPose) liveLandmarksRef.current = frame.landmarks;
+      },
+    });
+
+  useEffect(() => {
+    if (ready && streamRef.current) {
+      setLocalVideoStream(streamRef.current);
+    }
+  }, [ready, streamRef]);
+
+  const rtcEnabled = mode === "battle" && controlled && Boolean(matchId && role);
+  const { remoteStream, status: rtcStatus } = useBattleRtc({
+    enabled: rtcEnabled,
+    matchId,
+    role,
+    localVideoStream,
   });
+
+  useEffect(() => {
+    const el = rivalVideoRef.current;
+    if (!el) return;
+    if (remoteStream) {
+      el.srcObject = remoteStream;
+      void el.play().catch(() => undefined);
+    } else {
+      el.srcObject = null;
+    }
+  }, [remoteStream]);
 
   useEffect(() => {
     tickRef.current = tick;
@@ -381,6 +416,15 @@ export function LiveChartMatch({
     ritual === "getReady" ||
     ritual === "count2";
 
+  const stageLayout =
+    mode !== "battle"
+      ? "split"
+      : ritual === "preview" || ritual === "count1"
+        ? "preview"
+        : ritual === "done" || finished
+          ? "done"
+          : "fight";
+
   let liveStatus = "Enable camera permission";
   if (error) liveStatus = error;
   else if (!ready) liveStatus = "Loading MediaPipe…";
@@ -394,16 +438,115 @@ export function LiveChartMatch({
   else if (finished) liveStatus = "Match over";
   else liveStatus = hasPose ? "Ready — hit Start" : "Step into frame";
 
+  const chartPane = (
+    <div className="live-pane live-pane--chart">
+      <div className="live-pane-bar">
+        <p className="live-pane-label">
+          {ritual === "preview" ? "Routine preview" : "Routine"}
+        </p>
+        {videoUrl && (
+          <label className="live-mirror-toggle">
+            <input
+              type="checkbox"
+              checked={mirrorChart}
+              onChange={(e) => setMirrorChart(e.target.checked)}
+            />
+            Mirror
+          </label>
+        )}
+      </div>
+      {videoUrl ? (
+        <video
+          ref={refVideoRef}
+          className={
+            mirrorChart ? "live-ref-video mirrored" : "live-ref-video"
+          }
+          src={videoUrl}
+          playsInline
+          muted
+          preload="auto"
+          onEnded={() => {
+            if (ritualRef.current === "live") finishMatch(duration);
+          }}
+        />
+      ) : (
+        <div className="live-ref-video placeholder">
+          No preview video — timing from chart clock
+        </div>
+      )}
+    </div>
+  );
+
+  const youPane = (
+    <div className="live-pane live-pane--you">
+      <p className="live-pane-label">You</p>
+      <PoseStage
+        videoRef={videoRef}
+        canvasRef={canvasRef}
+        status={liveStatus}
+        recording={playing}
+      />
+      {mode === "battle" && (
+        <p className="live-pip-score">
+          {Math.round(tick.score).toLocaleString()}
+        </p>
+      )}
+    </div>
+  );
+
+  const rivalPane =
+    mode === "battle" ? (
+      <div className="live-pane live-pane--rival" aria-label={`${rivalName}`}>
+        <p className="live-pane-label">{rivalName}</p>
+        {remoteStream ? (
+          <div className="live-rival-video-wrap">
+            <video
+              ref={rivalVideoRef}
+              className="live-rival-video"
+              playsInline
+              autoPlay
+              muted={false}
+            />
+            <p className="live-pip-score live-pip-score--rival">
+              {Math.round(rivalScore ?? 0).toLocaleString()}
+            </p>
+            {rtcStatus === "connecting" && (
+              <span className="live-rival-connecting">Connecting…</span>
+            )}
+          </div>
+        ) : (
+          <div className="live-rival-card">
+            <span className="live-rival-letter">
+              {(rivalName || "?").slice(0, 1).toUpperCase()}
+            </span>
+            <span className="live-rival-name">{rivalName}</span>
+            <span className="live-rival-score">
+              {Math.round(rivalScore ?? 0).toLocaleString()}
+            </span>
+            <span className="live-rival-hint">
+              {rtcStatus === "connecting"
+                ? "Linking camera & voice…"
+                : rtcStatus === "error"
+                  ? "Peer link failed — scores still sync"
+                  : "Waiting for rival video…"}
+            </span>
+          </div>
+        )}
+      </div>
+    ) : null;
+
   return (
-    <div className={`live-match mode-${mode}${inRitual ? " ritual" : ""}`}>
+    <div
+      className={`live-match mode-${mode} layout-${stageLayout}${inRitual ? " ritual" : ""}`}
+    >
       <header className="live-match-head">
         <div>
           <p className="live-mode">
             {mode === "solo"
-              ? "Solo battle"
-              : ritual === "preview"
+              ? "Solo"
+              : stageLayout === "preview"
                 ? "Preview"
-                : ritual === "live" || playing
+                : stageLayout === "fight" || playing
                   ? "Battle"
                   : "Get ready"}
           </p>
@@ -440,52 +583,9 @@ export function LiveChartMatch({
       </header>
 
       <div className="live-match-stages">
-        <div className="live-pane">
-          <div className="live-pane-bar">
-            <p className="live-pane-label">
-              {ritual === "preview" ? "Chart preview" : "Chart"}
-            </p>
-            {videoUrl && (
-              <label className="live-mirror-toggle">
-                <input
-                  type="checkbox"
-                  checked={mirrorChart}
-                  onChange={(e) => setMirrorChart(e.target.checked)}
-                />
-                Mirror video
-              </label>
-            )}
-          </div>
-          {videoUrl ? (
-            <video
-              ref={refVideoRef}
-              className={
-                mirrorChart ? "live-ref-video mirrored" : "live-ref-video"
-              }
-              src={videoUrl}
-              playsInline
-              muted
-              preload="auto"
-              onEnded={() => {
-                if (ritualRef.current === "live") finishMatch(duration);
-              }}
-            />
-          ) : (
-            <div className="live-ref-video placeholder">
-              No preview video — timing from chart clock
-            </div>
-          )}
-        </div>
-
-        <div className="live-pane">
-          <p className="live-pane-label">You</p>
-          <PoseStage
-            videoRef={videoRef}
-            canvasRef={canvasRef}
-            status={liveStatus}
-            recording={playing}
-          />
-        </div>
+        {chartPane}
+        {youPane}
+        {rivalPane}
       </div>
 
       {(countDigit != null || ritual === "getReady") && (

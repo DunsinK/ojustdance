@@ -120,7 +120,8 @@ Same port as HTTP (`3001`). Events:
 3. Open `http://localhost:5173/battle` in **two** windows (or Chrome + Edge)
 4. Queue both → match starts → scores sync over Socket.io
 
-Pose stays on each browser; only scores + match handshake hit the server.
+Pose scoring stays on each browser; scores + match handshake + WebRTC signaling
+(offer/answer/ICE) go through Socket.io. Camera/mic media is peer-to-peer.
 
 ## Notes
 

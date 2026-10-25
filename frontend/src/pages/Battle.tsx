@@ -192,6 +192,8 @@ export function Battle() {
           startToken={startToken}
           rivalScore={rivalScore}
           rivalName={match.rival.name}
+          matchId={match.matchId}
+          role={match.role}
           onScoreUpdate={onScoreUpdate}
           onComplete={onComplete}
           onExit={leaveBattle}
@@ -204,6 +206,61 @@ export function Battle() {
   const searching = phase === "searching";
   const displayName = name.trim() || "Dancer";
 
+  if (phase === "result" && result) {
+    const outcomeClass =
+      result.outcome === "win"
+        ? "win"
+        : result.outcome === "lose"
+          ? "lose"
+          : "draw";
+    const headline =
+      result.outcome === "win"
+        ? "VICTORY"
+        : result.outcome === "lose"
+          ? "YOU LOST"
+          : "DRAW";
+    const sub =
+      result.outcome === "win"
+        ? "You took the round."
+        : result.outcome === "lose"
+          ? "They edged you out — queue again."
+          : "Same score. Rematch?";
+
+    return (
+      <main className={`page battle battle-result battle-result--${outcomeClass}`}>
+        <div className="battle-result-glow" aria-hidden="true" />
+        <p className="battle-result-kicker">Match complete</p>
+        <h1 className="battle-result-headline">{headline}</h1>
+        <p className="battle-result-sub">{sub}</p>
+
+        <div className="battle-result-scores" aria-label="Final scores">
+          <div className="battle-result-score you">
+            <span>You</span>
+            <strong>{result.you.score.toLocaleString()}</strong>
+          </div>
+          <span className="battle-result-vs" aria-hidden="true">
+            VS
+          </span>
+          <div className="battle-result-score rival">
+            <span>{result.rival.name}</span>
+            <strong>{result.rival.score.toLocaleString()}</strong>
+          </div>
+        </div>
+
+        <div className="battle-arena-actions">
+          <button type="button" className="battle-find" onClick={queueUp}>
+            <span aria-hidden="true">▶</span>
+            QUEUE AGAIN
+            <span aria-hidden="true">→</span>
+          </button>
+          <Link to="/" className="battle-home">
+            ⌂ Back home
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="page battle battle-arena">
       <div className="battle-arena-bg" aria-hidden="true" />
@@ -215,8 +272,8 @@ export function Battle() {
             Find your <span>rival.</span>
           </h1>
           <p>
-            Queue for a random rival. Same chart, live scores over Socket.io —
-            camera stays on your machine.
+            Queue for a random rival. Same chart, live scores — camera stays on
+            your machine.
           </p>
         </header>
 
@@ -250,43 +307,27 @@ export function Battle() {
           </div>
           <p className="battle-card-role">YOU</p>
           <p className="battle-card-status">
-            {phase === "result" && result
-              ? result.outcome === "win"
-                ? "Victory!"
-                : result.outcome === "lose"
-                  ? "Nice try"
-                  : "Draw"
-              : searching
-                ? "In queue…"
-                : "Ready to dance!"}
+            {searching ? "In queue…" : "Ready to dance!"}
           </p>
 
-          {phase !== "result" && (
-            <label className="battle-name-field">
-              Display name
-              <input
-                type="text"
-                value={name}
-                maxLength={32}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Dancer"
-                disabled={searching}
-              />
-            </label>
-          )}
-
-          {phase === "result" && result && (
-            <p className="battle-card-score">
-              {result.you.score.toLocaleString()} pts
-            </p>
-          )}
+          <label className="battle-name-field">
+            Display name
+            <input
+              type="text"
+              value={name}
+              maxLength={32}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Dancer"
+              disabled={searching}
+            />
+          </label>
 
           <ul className="battle-card-flags">
             <li className={ready ? "ok" : ""}>
               <span aria-hidden="true">✓</span> Camera ready
             </li>
             <li className="ok">
-              <span aria-hidden="true">✓</span> Private video
+              <span aria-hidden="true">✓</span> Live cam & voice in battle
             </li>
           </ul>
         </article>
@@ -300,45 +341,31 @@ export function Battle() {
           className={`battle-card battle-card--rival${searching ? " searching" : ""}`}
         >
           <div className="battle-card-avatar battle-card-avatar--rival">
-            {phase === "result" && result ? (
-              <span className="battle-rival-letter">
-                {(result.rival.name || "?").slice(0, 1).toUpperCase()}
-              </span>
-            ) : (
-              <span className="battle-rival-q">?</span>
-            )}
+            <span className="battle-rival-q">?</span>
           </div>
           <p className="battle-card-role">RIVAL</p>
           <p className="battle-card-status">
-            {phase === "result" && result
-              ? result.rival.name
-              : searching
-                ? "Searching for a dancer…"
-                : "Waiting for you to queue"}
+            {searching
+              ? "Searching for a dancer…"
+              : "Waiting for you to queue"}
           </p>
 
-          {phase === "result" && result ? (
-            <p className="battle-card-score">
-              {result.rival.score.toLocaleString()} pts
-            </p>
-          ) : (
-            <div className="battle-search-panel">
-              {searching ? (
-                <>
-                  <span className="battle-spinner" aria-hidden="true" />
-                  <p>
-                    <strong>Finding your rival…</strong>
-                    <span>This won’t take long. Get ready!</span>
-                  </p>
-                </>
-              ) : (
-                <p className="battle-search-idle">
-                  Hit find when you’re set. Needs a published chart and another
-                  dancer in queue.
+          <div className="battle-search-panel">
+            {searching ? (
+              <>
+                <span className="battle-spinner" aria-hidden="true" />
+                <p>
+                  <strong>Finding your rival…</strong>
+                  <span>This won’t take long. Get ready!</span>
                 </p>
-              )}
-            </div>
-          )}
+              </>
+            ) : (
+              <p className="battle-search-idle">
+                Hit find when you’re set. Needs a published dance and another
+                dancer in queue.
+              </p>
+            )}
+          </div>
         </article>
       </section>
 
@@ -353,13 +380,6 @@ export function Battle() {
         {phase === "searching" && (
           <button type="button" className="battle-find ghost" onClick={cancelQueue}>
             CANCEL SEARCH
-          </button>
-        )}
-        {phase === "result" && (
-          <button type="button" className="battle-find" onClick={queueUp}>
-            <span aria-hidden="true">▶</span>
-            QUEUE AGAIN
-            <span aria-hidden="true">→</span>
           </button>
         )}
         <Link to="/" className="battle-home">
@@ -393,10 +413,10 @@ export function Battle() {
           <span className="battle-feature-icon" aria-hidden="true">
             ⚡
           </span>
-          <h3>Camera stays on you</h3>
+          <h3>See & hear your rival</h3>
           <p>
-            Your video never leaves your device. Dance with privacy and
-            confidence.
+            Matched battles open a peer video + voice link. Pose scoring still
+            runs locally.
           </p>
         </article>
       </section>
