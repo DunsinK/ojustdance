@@ -107,6 +107,44 @@ export type AgentChatMessage = {
   content: string;
 };
 
+export type DanceVideoResult = {
+  videoId: string;
+  title: string;
+  channel: string;
+  duration: string | null;
+  thumbnail: string | null;
+  url: string;
+  embedUrl: string;
+  isShort: boolean;
+};
+
+export type DanceVideoSearchResponse = {
+  query: string;
+  results: DanceVideoResult[];
+};
+
+export async function searchDanceVideos(
+  description: string
+): Promise<DanceVideoSearchResponse> {
+  const res = await fetch(`${getApiUrl()}/agent/youtube-search`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ description }),
+  });
+  const body = (await res.json().catch(() => ({}))) as {
+    query?: string;
+    results?: DanceVideoResult[];
+    error?: string;
+  };
+  if (!res.ok) {
+    throw new Error(body.error || `Dance search failed (${res.status})`);
+  }
+  return {
+    query: body.query || description,
+    results: body.results || [],
+  };
+}
+
 export async function askMapAgent(
   messages: AgentChatMessage[]
 ): Promise<string> {

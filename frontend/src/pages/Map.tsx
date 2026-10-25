@@ -830,7 +830,7 @@ export function Map() {
         </aside>
       </section>
 
-      <MapAgent />
+      <MapAgent onImportVideo={() => fileInputRef.current?.click()} />
     </main>
   );
 }
