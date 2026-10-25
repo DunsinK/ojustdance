@@ -172,9 +172,6 @@ export function SoloBattles() {
                     <h2>{displayTitle(selected.title)}</h2>
                     <div className="solo-stage-meta">
                       <span className="solo-chip solo-chip--lime">
-                        {selected.difficulty}
-                      </span>
-                      <span className="solo-chip">
                         {formatDuration(selected.durationSec)}
                       </span>
                       <span className="solo-chip">
@@ -250,7 +247,7 @@ export function SoloBattles() {
                         {displayTitle(chart.title)}
                       </span>
                       <span className="solo-card-meta">
-                        {chart.difficulty} · {formatDuration(chart.durationSec)}
+                        {formatDuration(chart.durationSec)}
                       </span>
                     </span>
                   </button>
