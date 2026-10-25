@@ -75,10 +75,20 @@ export function Home() {
           <div className="gate-stage-wash" />
           <div className="gate-stage-floor" />
           <div className="gate-stage-beams" />
-          <p className="gate-scribble gate-scribble--left">
-            music moves people together
-          </p>
-          <p className="gate-scribble gate-scribble--right">just dance anywhere</p>
+          <img
+            className="gate-scribble gate-scribble--left"
+            src="/brand/scribble-music.png"
+            alt=""
+            width="420"
+            height="640"
+          />
+          <img
+            className="gate-scribble gate-scribble--right"
+            src="/brand/scribble-anywhere.png"
+            alt=""
+            width="420"
+            height="520"
+          />
         </div>
 
         <header className="gate-bar">
