@@ -9,8 +9,9 @@
     "lint": "cd .. && frontend/node_modules/.bin/eslint --config frontend/eslint.config.js frontend shared/skeleton/src",
     "preview": "vite preview",
     "build:skeleton": "tsc -p ../shared/skeleton/tsconfig.json",
-    "test": "npm run test:skeleton",
+    "test": "npm run test:skeleton && npm run test:scoring",
     "test:skeleton": "npm run build:skeleton && node --test ../shared/skeleton/tests/skeleton.test.mjs",
+    "test:scoring": "npm run build:skeleton && tsc -p tsconfig.scoring.json && node --test tests/scoring.test.mjs",
     "test:render": "node tests/render-smoke.mjs"
   },
   "dependencies": {

@@ -1,11 +1,16 @@
+import type { SkeletonFrame } from "@ojustdance/skeleton";
+
 /** Relative landmark: [x, y, z, visibility] */
 export type RelativeLandmark = [number, number, number, number];
 
 export type PoseFrame = {
+  /** performance.now() immediately before inference; sensor latency is not implied. */
+  capturedAtMs?: number;
   /** Wall / session time in seconds (caller-defined clock). */
   t: number;
   landmarks: RelativeLandmark[];
   hasPose: boolean;
+  canonicalFrame?: SkeletonFrame;
 };
 
 export type ModelKey = "lite" | "full" | "heavy";
@@ -13,6 +18,9 @@ export type ModelKey = "lite" | "full" | "heavy";
 export type ChartSample = {
   t: number;
   landmarks: RelativeLandmark[];
+  /** Original preview-video seconds, retained when chart clips move. */
+  sourceTimeSec?: number;
+  canonicalFrame?: SkeletonFrame;
 };
 
 export type TimelineSegment = {

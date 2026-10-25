@@ -161,6 +161,10 @@
   color: var(--signal);
 }
 
+.live-judge.unavailable {
+  color: #786798;
+}
+
 .live-combo-n {
   font-weight: 700;
   color: var(--ink-soft);
@@ -459,6 +463,10 @@
 
 .live-meter-fill.miss {
   background: var(--signal);
+}
+
+.live-meter-fill.unavailable {
+  background: #786798;
 }
 
 .live-progress {

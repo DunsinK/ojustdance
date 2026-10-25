@@ -67,6 +67,7 @@ export function Map() {
   const playheadRef = useRef(playheadSec);
   const activeSegIdRef = useRef<string | null>(null);
   const recordStartedAtRef = useRef(0);
+  const recordedSourceSecRef = useRef(0);
   const segmentOriginRef = useRef(0);
   const lastSampleAtRef = useRef(0);
   const clockRafRef = useRef(0);
@@ -118,7 +119,14 @@ export function Map() {
             endSec: t,
             samples: [
               ...seg.samples,
-              { t: Number(t.toFixed(4)), landmarks: frame.landmarks },
+              {
+                t: Number(t.toFixed(4)),
+                landmarks: frame.landmarks,
+                sourceTimeSec:
+                  recordedSourceSecRef.current +
+                  (now - recordStartedAtRef.current) / 1000,
+                canonicalFrame: frame.canonicalFrame,
+              },
             ],
           };
         })
@@ -331,6 +339,7 @@ export function Map() {
   async function startRecording() {
     if (mode !== "camera" || !ready) return;
 
+    if (!sessionRecorderRef.current) recordedSourceSecRef.current = 0;
     const startAt = playheadRef.current;
     const id = newId();
     activeSegIdRef.current = id;
@@ -371,6 +380,10 @@ export function Map() {
   }
 
   function pauseRecording() {
+    if (transport === "recording") {
+      recordedSourceSecRef.current +=
+        (performance.now() - recordStartedAtRef.current) / 1000;
+    }
     setTransport("paused");
     activeSegIdRef.current = null;
     sessionRecorderRef.current?.pause();
@@ -378,6 +391,10 @@ export function Map() {
   }
 
   async function stopSession() {
+    if (transport === "recording") {
+      recordedSourceSecRef.current +=
+        (performance.now() - recordStartedAtRef.current) / 1000;
+    }
     setTransport("idle");
     activeSegIdRef.current = null;
     void syncMusic(false, true);

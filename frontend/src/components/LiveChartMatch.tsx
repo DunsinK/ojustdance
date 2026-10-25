@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useBattleRtc } from "../lib/battleRtc";
 import {
-  applyScoreTick,
-  gradePose,
-  sampleAtTime,
-  type ScoreTick,
+  DanceScorer,
+  buildReferenceTrack,
+  scoringConfig,
+  type ScoreSnapshot,
 } from "../pose/gradePose";
 import { PoseStage } from "../pose/PoseStage";
-import type { ChartDocument, RelativeLandmark } from "../pose/types";
+import type { ChartDocument } from "../pose/types";
 import { usePoseSource } from "../pose/usePoseSource";
 import "./LiveChartMatch.css";
 
@@ -45,11 +45,26 @@ type RitualPhase =
   | "live"
   | "done";
 
-const INITIAL_TICK: ScoreTick = {
+const INITIAL_TICK: ScoreSnapshot = {
+  schemaVersion: "dance-score/3",
+  timeSec: 0,
+  accuracy: 0,
+  pointCredit: 0,
+  form: 0,
+  motion: null,
+  timing: 0,
+  coverage: 0,
+  offsetMs: null,
+  label: "…",
   score: 0,
+  maxScore: 10000,
   combo: 0,
   maxCombo: 0,
-  label: "…",
+  averageAccuracy: 0,
+  trackingCoverage: 0,
+  judgedCoverage: 0,
+  trackingMisses: 0,
+  processedOpportunities: 0,
 };
 
 function sleep(ms: number, signal?: AbortSignal) {
@@ -67,6 +82,27 @@ function sleep(ms: number, signal?: AbortSignal) {
       },
       { once: true },
     );
+  });
+}
+
+function waitForReferenceVideo(video: HTMLVideoElement) {
+  if (video.readyState >= 2 && video.videoWidth > 0) return Promise.resolve();
+  return new Promise<void>((resolve, reject) => {
+    const cleanup = () => {
+      video.removeEventListener("loadeddata", onLoaded);
+      video.removeEventListener("error", onError);
+    };
+    const onLoaded = () => {
+      cleanup();
+      resolve();
+    };
+    const onError = () => {
+      cleanup();
+      reject(new Error("Could not load the chart preview video"));
+    };
+    video.addEventListener("loadeddata", onLoaded, { once: true });
+    video.addEventListener("error", onError, { once: true });
+    video.load();
   });
 }
 
@@ -90,9 +126,14 @@ export function LiveChartMatch({
   const [playing, setPlaying] = useState(false);
   const [finished, setFinished] = useState(false);
   const [chartTime, setChartTime] = useState(0);
-  const [tick, setTick] = useState<ScoreTick>(INITIAL_TICK);
+  const [tick, setTick] = useState<ScoreSnapshot>(INITIAL_TICK);
   const [accuracy, setAccuracy] = useState(0);
   const [finalAvg, setFinalAvg] = useState(0);
+  const [referenceDuration, setReferenceDuration] = useState<number | null>(
+    null,
+  );
+  const [starting, setStarting] = useState(false);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [mirrorChart, setMirrorChart] = useState(true);
   const [ritual, setRitual] = useState<RitualPhase>("idle");
   const [countDigit, setCountDigit] = useState<number | null>(null);
@@ -100,13 +141,12 @@ export function LiveChartMatch({
     null
   );
 
-  const liveLandmarksRef = useRef<RelativeLandmark[]>([]);
-  const hasPoseRef = useRef(false);
-  const tickRef = useRef<ScoreTick>(INITIAL_TICK);
-  const lastGradeAtRef = useRef(0);
+  const tickRef = useRef<ScoreSnapshot>(INITIAL_TICK);
+  const scorerRef = useRef<DanceScorer | null>(null);
+  const startingRef = useRef(false);
+  const sessionStartedAtRef = useRef(0);
+  const endingStartedAtRef = useRef<number | null>(null);
   const chartTimeRef = useRef(0);
-  const accuracySumRef = useRef(0);
-  const accuracyCountRef = useRef(0);
   const completedRef = useRef(false);
   const playingRef = useRef(false);
   const ritualRef = useRef<RitualPhase>("idle");
@@ -117,19 +157,35 @@ export function LiveChartMatch({
 
   const useRitual = mode === "battle" && controlled;
 
-  const duration = Math.max(
-    chart.durationSec || 0,
-    chart.samples.at(-1)?.t ?? 0,
-    1,
-  );
+  const duration =
+    referenceDuration ??
+    Math.max(chart.durationSec || 0, chart.samples.at(-1)?.t ?? 0, 1);
 
   const { videoRef, canvasRef, streamRef, ready, error, hasPose, fps } =
     usePoseSource({
       mode: "camera",
       enabled: true,
       onFrame: (frame) => {
-        hasPoseRef.current = frame.hasPose;
-        if (frame.hasPose) liveLandmarksRef.current = frame.landmarks;
+        const scorer = scorerRef.current;
+        if (!playingRef.current || !scorer || frame.capturedAtMs == null) return;
+
+        const now = performance.now();
+        const video = refVideoRef.current;
+        const receivedAtSongTimeSec =
+          endingStartedAtRef.current !== null
+            ? scorer.reference.durationSec +
+              (now - endingStartedAtRef.current) / 1000
+            : videoUrl && video
+              ? video.currentTime
+              : (now - sessionStartedAtRef.current) / 1000;
+        const inferenceDelaySec = Math.max(0, now - frame.capturedAtMs) / 1000;
+        scorer.addObservation({
+          songTimeSec:
+            receivedAtSongTimeSec -
+            inferenceDelaySec * (video?.playbackRate ?? 1),
+          receivedAtSongTimeSec,
+          frame: frame.hasPose ? frame.canonicalFrame ?? null : null,
+        });
       },
     });
 
@@ -180,22 +236,22 @@ export function LiveChartMatch({
     if (completedRef.current) return;
     completedRef.current = true;
     playingRef.current = false;
+    const result = scorerRef.current?.finish(endT) ?? INITIAL_TICK;
+    tickRef.current = result;
     setPlaying(false);
     setFinished(true);
     setRitual("done");
     setCountDigit(null);
     setChartTime(endT);
     chartTimeRef.current = endT;
-    const avg =
-      accuracyCountRef.current > 0
-        ? accuracySumRef.current / accuracyCountRef.current
-        : 0;
-    setFinalAvg(avg);
+    setTick(result);
+    setAccuracy(result.accuracy);
+    setFinalAvg(result.averageAccuracy);
     refVideoRef.current?.pause();
     onComplete?.({
-      score: Math.round(tickRef.current.score),
-      maxCombo: tickRef.current.maxCombo,
-      avgAccuracy: avg,
+      score: Math.round(result.score),
+      maxCombo: result.maxCombo,
+      avgAccuracy: result.averageAccuracy,
       durationSec: endT,
     });
   }
@@ -208,49 +264,46 @@ export function LiveChartMatch({
       if (!playingRef.current) return;
 
       const refVid = refVideoRef.current;
-      let t = chartTimeRef.current;
       const now = performance.now();
-      const dt =
-        lastGradeAtRef.current > 0
-          ? Math.min(0.08, (now - lastGradeAtRef.current) / 1000)
-          : 1 / 30;
-      lastGradeAtRef.current = now;
-
-      if (refVid && videoUrl && !refVid.paused) {
-        t = refVid.currentTime;
-        if (refVid.ended || t >= duration - 0.05) {
-          finishMatch(Math.min(t, duration));
-          return;
-        }
-      } else if (!videoUrl) {
-        t = Math.min(duration, chartTimeRef.current + dt);
-        if (t >= duration) {
-          finishMatch(duration);
-          return;
+      const scorer = scorerRef.current;
+      if (!scorer) return;
+      const end = scorer.reference.durationSec;
+      let time =
+        videoUrl && refVid
+          ? refVid.currentTime
+          : (now - sessionStartedAtRef.current) / 1000;
+      if (time >= end || refVid?.ended) {
+        if (endingStartedAtRef.current === null) {
+          endingStartedAtRef.current = videoUrl
+            ? now
+            : sessionStartedAtRef.current + end * 1000;
         }
       }
-
-      chartTimeRef.current = t;
-
-      const sample = sampleAtTime(chart.samples, t);
-      let nextAcc = 0;
-      if (sample && hasPoseRef.current && liveLandmarksRef.current.length) {
-        nextAcc = gradePose(liveLandmarksRef.current, sample.landmarks).accuracy;
-        accuracySumRef.current += nextAcc;
-        accuracyCountRef.current += 1;
-      } else {
-        nextAcc = 0.15;
+      if (endingStartedAtRef.current !== null) {
+        time = end + (now - endingStartedAtRef.current) / 1000;
       }
 
-      const nextTick = applyScoreTick(tickRef.current, nextAcc, dt);
+      const nextTick = scorer.advance(time);
       tickRef.current = nextTick;
       setTick(nextTick);
-      setAccuracy(nextAcc);
-      setChartTime(t);
+      setAccuracy(nextTick.accuracy);
+      chartTimeRef.current = Math.min(time, end);
+      setChartTime(chartTimeRef.current);
 
       if (now - lastScoreEmitRef.current > 200) {
         lastScoreEmitRef.current = now;
         onScoreUpdateRef.current?.(Math.round(nextTick.score));
+      }
+
+      if (
+        time >=
+        end +
+        (scorer.config.timingToleranceMs +
+          scorer.config.processingDeadlineMs) /
+          1000
+      ) {
+        finishMatch(end);
+        return;
       }
 
       raf = requestAnimationFrame(loop);
@@ -259,7 +312,7 @@ export function LiveChartMatch({
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, videoUrl, duration, chart.samples]);
+  }, [playing, videoUrl]);
 
   async function playPreview(signal: AbortSignal) {
     setRitual("preview");
@@ -330,33 +383,65 @@ export function LiveChartMatch({
   }
 
   async function startLive() {
-    if (playingRef.current) return;
-    completedRef.current = false;
-    accuracySumRef.current = 0;
-    accuracyCountRef.current = 0;
-    lastGradeAtRef.current = 0;
-    lastScoreEmitRef.current = 0;
-    chartTimeRef.current = 0;
-    tickRef.current = INITIAL_TICK;
-    setTick(INITIAL_TICK);
-    setAccuracy(0);
-    setChartTime(0);
-    setFinalAvg(0);
-    setFinished(false);
-    setRitual("live");
-    ritualRef.current = "live";
+    if (playingRef.current || startingRef.current) return;
+    startingRef.current = true;
+    setStarting(true);
+    setPlaybackError(null);
+    try {
+      const refVid = refVideoRef.current;
+      if (videoUrl && refVid) await waitForReferenceVideo(refVid);
 
-    const refVid = refVideoRef.current;
-    if (refVid && videoUrl) {
-      refVid.currentTime = 0;
-      try {
+      const config = scoringConfig();
+      const referenceOptions = {
+        reflectDance: !mirrorChart,
+        timeline: videoUrl ? ("source-video" as const) : ("chart" as const),
+        ...(videoUrl && refVid
+          ? {
+              durationSec: refVid.duration,
+              imageSize: {
+                width: refVid.videoWidth,
+                height: refVid.videoHeight,
+              },
+            }
+          : {}),
+      };
+      const track = buildReferenceTrack(chart, {
+        ...referenceOptions,
+        config,
+      });
+      const scorer = new DanceScorer(track, config);
+
+      if (refVid && videoUrl) {
+        refVid.currentTime = 0;
         await refVid.play();
-      } catch (err) {
-        console.error(err);
       }
+
+      scorerRef.current = scorer;
+      setReferenceDuration(track.durationSec);
+      completedRef.current = false;
+      lastScoreEmitRef.current = 0;
+      chartTimeRef.current = 0;
+      sessionStartedAtRef.current = performance.now();
+      endingStartedAtRef.current = null;
+      tickRef.current = INITIAL_TICK;
+      setTick(INITIAL_TICK);
+      setAccuracy(0);
+      setChartTime(0);
+      setFinalAvg(0);
+      setFinished(false);
+      setRitual("live");
+      ritualRef.current = "live";
+      playingRef.current = true;
+      setPlaying(true);
+    } catch (err) {
+      console.error(err);
+      setPlaybackError(
+        err instanceof Error ? err.message : "Could not start playback",
+      );
+    } finally {
+      startingRef.current = false;
+      setStarting(false);
     }
-    playingRef.current = true;
-    setPlaying(true);
   }
 
   async function beginRitual() {
@@ -402,7 +487,9 @@ export function LiveChartMatch({
 
   const progress = Math.min(1, chartTime / duration);
   const meterClass =
-    accuracy >= 0.82
+    tick.label === "TRACKING" || tick.label === "NO REFERENCE"
+      ? "unavailable"
+      : accuracy >= 0.82
       ? "hot"
       : accuracy >= 0.65
         ? "good"
@@ -449,6 +536,7 @@ export function LiveChartMatch({
             <input
               type="checkbox"
               checked={mirrorChart}
+              disabled={playing || starting}
               onChange={(e) => setMirrorChart(e.target.checked)}
             />
             Mirror
@@ -466,7 +554,12 @@ export function LiveChartMatch({
           muted
           preload="auto"
           onEnded={() => {
-            if (ritualRef.current === "live") finishMatch(duration);
+            if (
+              ritualRef.current === "live" &&
+              endingStartedAtRef.current === null
+            ) {
+              endingStartedAtRef.current = performance.now();
+            }
           }}
         />
       ) : (
@@ -626,14 +719,15 @@ export function LiveChartMatch({
       </div>
 
       <div className="live-actions">
+        {playbackError && <p className="api-error">{playbackError}</p>}
         {!controlled && !playing && !finished && (
           <button
             type="button"
             className="btn primary"
-            disabled={!ready}
+            disabled={!ready || starting}
             onClick={() => void start()}
           >
-            Start
+            {starting ? "Starting…" : "Start"}
           </button>
         )}
         {controlled && ritual === "idle" && !playing && !finished && (
@@ -656,9 +750,10 @@ export function LiveChartMatch({
           <button
             type="button"
             className="btn primary"
+            disabled={starting}
             onClick={() => void start()}
           >
-            Retry
+            {starting ? "Starting…" : "Retry"}
           </button>
         )}
         {(finished || (!playing && !finished && !inRitual)) && onExit && (

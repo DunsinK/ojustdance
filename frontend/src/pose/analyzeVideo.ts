@@ -1,3 +1,4 @@
+import { MediaPipeStyleAdapter } from "@ojustdance/skeleton";
 import type { PoseLandmarker } from "@mediapipe/tasks-vision";
 import { DrawingUtils } from "@mediapipe/tasks-vision";
 import { PoseLandmarker as PL } from "./createPoseLandmarker";
@@ -51,6 +52,8 @@ export async function analyzeVideoFile(opts: {
 
   video.pause();
   const samples: ChartSample[] = [];
+  const adapter = new MediaPipeStyleAdapter();
+  const timelineId = crypto.randomUUID();
   let stamp = 0;
 
   for (let t = 0; t <= duration + 1e-6; t += step) {
@@ -90,9 +93,26 @@ export async function analyzeVideoFile(opts: {
     }
 
     if (raw?.length) {
+      let canonicalFrame: ChartSample["canonicalFrame"];
+      try {
+        canonicalFrame = adapter.toFrame({
+          schemaVersion: "mediapipe-style/1",
+          timestampMs: seekTo * 1000,
+          timeline: { origin: "video-start", id: timelineId },
+          space: "normalized-image",
+          imageSize: { width: video.videoWidth, height: video.videoHeight },
+          depth: "preserve-estimate",
+          mirrored: false,
+          landmarks: raw,
+        });
+      } catch (err) {
+        console.error("Could not convert imported pose frame for scoring", err);
+      }
       samples.push({
         t: Number(seekTo.toFixed(4)),
         landmarks: normalizePose(raw),
+        sourceTimeSec: seekTo,
+        canonicalFrame,
       });
     }
 
