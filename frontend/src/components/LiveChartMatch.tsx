@@ -129,6 +129,9 @@ export function LiveChartMatch({
   const [tick, setTick] = useState<ScoreSnapshot>(INITIAL_TICK);
   const [accuracy, setAccuracy] = useState(0);
   const [finalAvg, setFinalAvg] = useState(0);
+  const [referenceAspectRatio, setReferenceAspectRatio] = useState<
+    string | null
+  >(null);
   const [referenceDuration, setReferenceDuration] = useState<number | null>(
     null,
   );
@@ -550,6 +553,18 @@ export function LiveChartMatch({
             mirrorChart ? "live-ref-video mirrored" : "live-ref-video"
           }
           src={videoUrl}
+          style={
+            referenceAspectRatio
+              ? { aspectRatio: referenceAspectRatio }
+              : undefined
+          }
+          onLoadStart={() => setReferenceAspectRatio(null)}
+          onLoadedMetadata={(event) => {
+            const { videoWidth, videoHeight } = event.currentTarget;
+            if (videoWidth > 0 && videoHeight > 0) {
+              setReferenceAspectRatio(`${videoWidth} / ${videoHeight}`);
+            }
+          }}
           playsInline
           muted
           preload="auto"
@@ -578,6 +593,8 @@ export function LiveChartMatch({
         canvasRef={canvasRef}
         status={liveStatus}
         recording={playing}
+        fitVideo={mode === "solo"}
+        aspectRatio={mode === "solo" ? referenceAspectRatio : undefined}
       />
       {mode === "battle" && (
         <p className="live-pip-score">
