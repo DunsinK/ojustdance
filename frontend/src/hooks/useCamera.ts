@@ -47,10 +47,10 @@ export function useCamera() {
       setStatus("error");
       setError(
         err instanceof DOMException && err.name === "NotAllowedError"
-          ? "Camera permission was declined. Allow camera access in your browser, then retry—or keep playing the demo."
+          ? "Camera permission was declined. Allow camera access in your browser, then retry, or continue without camera."
           : err instanceof Error
             ? err.message
-            : "Camera unavailable. Connect a camera and retry, or use the demo.",
+            : "Camera unavailable. Connect a camera and retry, or continue without camera.",
       );
     }
   };

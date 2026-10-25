@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { motion, useReducedMotion } from "motion/react";
+import { useNavigate } from "react-router-dom";
 import type { GameAction, GameAdapter, GameRenderers } from "./types";
-import type { DemoController } from "./demo/controller";
 import { Brand, Spark } from "./components/Brand";
 import { ChoreographyStage, VideoPanel } from "./components/Stage";
 import { useCamera } from "./hooks/useCamera";
 import { ReducedMotionContext } from "./ui/Motion";
 import { Button } from "./ui/Button";
-import { Landing } from "./screens/Landing";
+import { Landing, PlayMenu } from "./screens/Landing";
 import { Preview } from "./screens/Room";
 import { Matchmaking } from "./screens/Matchmaking";
 import { Battle } from "./screens/Battle";
@@ -19,14 +19,16 @@ const defaults: GameRenderers = {
 export function App({
   adapter,
   renderers = defaults,
-  demoControls,
   streams = {},
+  startBattle = false,
 }: {
   adapter: GameAdapter;
   renderers?: GameRenderers;
-  demoControls?: DemoController;
   streams?: Record<string, MediaStream>;
+  startBattle?: boolean;
 }) {
+  const navigate = useNavigate();
+  const autoStarted = useRef(false);
   const game = useSyncExternalStore(
     adapter.subscribe,
     adapter.getSnapshot,
@@ -37,12 +39,8 @@ export function App({
   const systemReduced = useReducedMotion();
   const quiet = !!systemReduced;
   const { phase } = game;
-  const [cancelledSearch, setCancelledSearch] = useState(false);
-  const home = phase === "home" && !cancelledSearch;
-  const lobby =
-    phase === "searching" ||
-    phase === "found" ||
-    (phase === "home" && cancelledSearch);
+  const home = phase === "home";
+  const lobby = phase === "searching" || phase === "found";
   const failed =
     game.connection === "error" || game.connection === "disconnected";
   const battle = phase === "battle" || phase === "countdown";
@@ -55,11 +53,28 @@ export function App({
   useEffect(() => {
     main.current?.focus();
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, [focusKey, failed, cancelledSearch]);
+  }, [focusKey, failed]);
   const act = (action: GameAction) => {
     if (action === "leave" || action === "cancel") camera.stop();
-    setCancelledSearch(action === "cancel");
     adapter.dispatch(action);
+  };
+  useEffect(() => {
+    if (startBattle && !autoStarted.current) {
+      autoStarted.current = true;
+      adapter.dispatch("find");
+    }
+  }, [adapter, startBattle]);
+  const findBattle = () => {
+    if (startBattle) act("find");
+    else navigate("/battle");
+  };
+  const leaveBattle = () => {
+    act("leave");
+    if (startBattle) navigate("/");
+  };
+  const cancelSearch = () => {
+    act("cancel");
+    if (startBattle) navigate("/");
   };
   const cameraControl = (
     <div className="camera-control">
@@ -72,10 +87,8 @@ export function App({
         </span>
         <p>
           {camera.status === "on"
-            ? "Microphone off. Local preview in demo."
-            : game.demo
-              ? "Optional in demo. Your camera, your call."
-              : "Enable your camera to check your framing."}
+            ? "Microphone off. Your camera preview stays on this device."
+            : "Enable your camera to check your framing. Video is not shared."}
         </p>
       </div>
       <Button
@@ -110,7 +123,7 @@ export function App({
           <button
             className="brand-button"
             aria-label="ojustdance home"
-            onClick={() => act("leave")}
+            onClick={leaveBattle}
           >
             <Brand />
           </button>
@@ -136,15 +149,26 @@ export function App({
           <div className="header-actions">
             <span className="badge mode-badge">
               <i className="status-dot" />
-              {game.demo ? "DEMO MODE" : game.connection.toUpperCase()}
+              {game.connection.toUpperCase()}
             </span>
             {!home && (
-              <Button variant="quiet" onClick={() => act("leave")}>
+              <Button variant="quiet" onClick={leaveBattle}>
                 Leave room ↗
               </Button>
             )}
           </div>
         </header>
+        {home && (
+          <div className="festival-persistent">
+            <PlayMenu
+              onFind={findBattle}
+              onSolo={() => navigate("/solo")}
+              onPractice={() => navigate("/map")}
+            >
+              PLAY NOW
+            </PlayMenu>
+          </div>
+        )}
         <main id="main" ref={main} tabIndex={-1}>
           <motion.div
             key={lobby ? "matchmaking" : `${phase}-${failed}`}
@@ -154,17 +178,21 @@ export function App({
             transition={{ duration: 0.32 }}
           >
             {home ? (
-              <Landing onFind={() => act("find")} renderers={renderers} />
+              <Landing
+                onFind={findBattle}
+                onSolo={() => navigate("/solo")}
+                onPractice={() => navigate("/map")}
+                renderers={renderers}
+              />
             ) : lobby ? (
               <Matchmaking
                 game={game}
                 renderers={renderers}
                 stream={videoStreams[game.players[0].id]}
                 cameraControl={cameraControl}
-                cancelled={cancelledSearch}
-                onCancel={() => act("cancel")}
+                onCancel={cancelSearch}
                 onRetry={() => act("retry")}
-                onLeave={() => act("leave")}
+                onLeave={leaveBattle}
               />
             ) : failed ? (
               <section className="status-screen">
@@ -182,7 +210,7 @@ export function App({
                 <Button onClick={() => act("retry")} arrow>
                   Find a new match
                 </Button>
-                <Button variant="quiet" onClick={() => act("leave")}>
+                <Button variant="quiet" onClick={leaveBattle}>
                   Back to home
                 </Button>
               </section>
@@ -204,8 +232,7 @@ export function App({
               <Results
                 game={game}
                 onNext={() => act("next")}
-                onRematch={() => act("rematch")}
-                onLeave={() => act("leave")}
+                onLeave={leaveBattle}
               />
             )}
             {!home &&
@@ -221,36 +248,6 @@ export function App({
                   </Button>
                 </div>
               )}
-            {!home && !cancelledSearch && demoControls && (
-              <details className="demo-tools">
-                <summary>
-                  Demo controls{" "}
-                  <span>Skip timers · test connection states</span>
-                </summary>
-                <div>
-                  <Button
-                    variant="secondary"
-                    onClick={demoControls.skip}
-                    disabled={phase === "results" || failed}
-                  >
-                    Skip current timer
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => demoControls.setConnection("disconnected")}
-                  >
-                    Simulate disconnect
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => demoControls.setConnection("error")}
-                  >
-                    Simulate error
-                  </Button>
-                  <span>Preview requires “I’m ready to dance”.</span>
-                </div>
-              </details>
-            )}
           </motion.div>
         </main>
         <footer className="site-footer">

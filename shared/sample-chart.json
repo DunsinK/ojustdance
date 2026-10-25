@@ -1,0 +1,18 @@
+{
+  "id": "local-practice-chart",
+  "title": "Foundation Steps",
+  "artist": "ojustdance · sample chart",
+  "bpm": 120,
+  "difficulty": "Easy",
+  "durationMs": 30000,
+  "previewDurationMs": 30000,
+  "sample": true,
+  "moves": [
+    { "id": "step-1", "name": "Side step", "startMs": 0, "durationMs": 5000 },
+    { "id": "step-2", "name": "Reach up", "startMs": 5000, "durationMs": 5000 },
+    { "id": "step-3", "name": "Cross and pop", "startMs": 10000, "durationMs": 5000 },
+    { "id": "step-4", "name": "Slide right", "startMs": 15000, "durationMs": 5000 },
+    { "id": "step-5", "name": "Double bounce", "startMs": 20000, "durationMs": 5000 },
+    { "id": "step-6", "name": "Freestyle", "startMs": 25000, "durationMs": 5000 }
+  ]
+}

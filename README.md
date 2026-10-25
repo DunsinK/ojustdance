@@ -1,12 +1,12 @@
 # ojustdance
 
-Random dance battles, scored in the browser — Omegle matchmaking meets osu!-style user-mapped charts.
+A real-time dance-battle prototype: server matchmaking and shared chart timing work; camera publishing, pose scoring, and persistence are still being built.
 
 ## What it is
 
-Two strangers get paired into a live dance battle over a shared song chart. Each player’s webcam pose is graded **on their own device** against the chart. Scores stream over a match WebSocket so both sides see a live duel; the final result is persisted for history / leaderboards.
+The target experience pairs two players into a dance battle over a shared song chart. The planned scoring system grades webcam pose **on each player's device** against that chart. Scores will stream over the match WebSocket, with final results persisted for history and leaderboards.
 
-Creators map dances to songs (like osu! mapping): record a reference pose sequence timed to audio, save it as a chart, and publish it for random battles to pull from.
+Creators will be able to map dances to songs (like osu! mapping): record a reference pose sequence timed to audio, save it as a chart, and publish it for random battles to use.
 
 | Inspiration | What we take |
 |---|---|
@@ -56,11 +56,15 @@ The `demo/` folder is the pose + mapping smoke test (MediaPipe in the browser). 
 | Piece | Role | Why |
 |---|---|---|
 | **React + Vite** (`frontend/`) | UI, camera, MediaPipe, local scoring, WS client | Fast DX; all heavy CV stays on-device so we don’t stream video to the server |
-| **MediaPipe Pose** (in browser) | Track body + compare to chart | Proven in `demo/`; low latency; privacy-friendly (video never leaves the client) |
+| **MediaPipe Pose** (in browser) | Track body + compare to chart | Pose estimation stays on-device; a preview video is uploaded only when a user publishes a Practice chart |
 | **Express** (`backend/`, **Railway**) | Matchmaking, WebSocket rooms, authoritative match clock / final scores | Lightweight realtime hub; Railway is enough for sockets + short-lived match state |
 | **Supabase** | Auth, Postgres, chart/song/user/match history storage | Managed DB + auth so the Express app stays thin |
 
-**Important:** the server does **not** run pose estimation. It trusts (or lightly validates) client-reported scores for the hackathon, keeps the shared match timeline, and writes the settled result to Supabase. Video stays local.
+**Important:** the server does **not** run pose estimation. Live Battle camera video stays local, while a user-published Practice chart may include an uploaded preview video. Battle scores are client-reported and the current matchmaking state is in memory.
+
+### Current local integration
+
+Battle connects to `backend/` over WebSocket for in-memory matchmaking, room phases, readiness, and shared test-chart delivery. Solo and Practice use browser-side MediaPipe pose processing and the Supabase chart API (`/api/charts`) for saved charts and preview videos. Configure `backend/.env` and manually run `backend/sql/init.sql` in Supabase before using the chart library; the backend deliberately does not apply schema changes at startup. See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md) for setup details.
 
 ## Suggested stack (concrete)
 

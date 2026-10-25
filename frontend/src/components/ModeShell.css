@@ -1,0 +1,243 @@
+.mode-shell {
+  --acid: var(--lime);
+  --signal: var(--coral);
+  --ink-soft: var(--muted);
+  --paper: var(--white);
+  width: min(1120px, calc(100% - 2 * var(--gutter)));
+  min-height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  color: var(--white);
+}
+
+.mode-skip-link {
+  position: absolute;
+  top: -100px;
+  left: 20px;
+  z-index: 20;
+  padding: 12px 16px;
+  background: var(--lime);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.mode-skip-link:focus {
+  top: 12px;
+}
+
+.mode-header {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mode-brand {
+  display: block;
+  width: min(176px, 38vw);
+  flex: 0 0 auto;
+}
+
+.mode-brand .brand {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.mode-header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mode-header nav a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mode-header nav a:hover,
+.mode-header nav a.active {
+  color: var(--white);
+}
+
+.mode-header nav a.active {
+  border-bottom-color: var(--lime);
+}
+
+.mode-content {
+  flex: 1;
+}
+
+.mode-loading {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.mode-content .page {
+  padding-top: 32px;
+  animation: mode-rise-in 280ms var(--ease) both;
+}
+
+.mode-shell .btn {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border: 1px solid var(--control-line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--white);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mode-shell .btn:hover:not(:disabled) {
+  border-color: var(--white);
+  background: #303744;
+}
+
+.mode-shell .btn.primary {
+  border-color: var(--lime);
+  background: var(--lime);
+  color: var(--ink);
+}
+
+.mode-shell .btn.primary:hover:not(:disabled) {
+  background: var(--lime-hover);
+}
+
+.mode-shell .btn.danger {
+  border-color: var(--coral);
+  background: var(--coral);
+  color: var(--white);
+}
+
+.mode-shell .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.mode-shell .solo-list,
+.mode-shell .solo-detail,
+.mode-shell .map-side,
+.mode-shell .lane-panel,
+.mode-shell .api-panel {
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+.mode-shell .solo-list {
+  border-width: 1px;
+}
+
+.mode-shell .solo-detail,
+.mode-shell .map-side,
+.mode-shell .lane-panel {
+  border-width: 1px;
+}
+
+.mode-shell .solo-list li + li {
+  border-color: var(--line);
+}
+
+.mode-shell .solo-card:hover {
+  background: rgba(215, 255, 82, 0.08);
+}
+
+.mode-shell .solo-card.selected {
+  background: rgba(215, 255, 82, 0.15);
+}
+
+.mode-shell .solo-last-result {
+  border: 1px solid var(--line);
+  background: rgba(215, 255, 82, 0.1);
+}
+
+.mode-shell .solo-load-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mode-shell .map-stats > div {
+  background: var(--surface-raised);
+}
+
+.mode-shell .timeline-track {
+  border-color: var(--line);
+  background-color: var(--surface-raised);
+}
+
+.mode-shell .live-ref-video,
+.mode-shell .pose-stage {
+  border-color: var(--line);
+}
+
+.mode-shell .live-progress-fill {
+  background: var(--lime);
+}
+
+.mode-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+@keyframes mode-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .mode-header {
+    min-height: auto;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 0 12px;
+  }
+
+  .mode-header nav {
+    width: 100%;
+    gap: 0;
+  }
+
+  .mode-header nav a {
+    padding: 8px;
+  }
+
+  .mode-footer {
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-content .page {
+    animation: none;
+  }
+}

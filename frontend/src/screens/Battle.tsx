@@ -34,14 +34,15 @@ export function Battle({
           countdown ? (game.choreography?.durationMs ?? 0) : game.remainingMs
         }
         elapsed={countdown ? 0 : game.elapsedMs}
-        demo={game.demo}
+        sampleChart={game.choreography?.sample ?? false}
       />
       <div className="battle-context">
         <span>
           <i className="status-dot" />
-          {game.demo
-            ? "DEMO ROOM · SIMULATED SCORES"
-            : game.connection.toUpperCase()}
+          {game.connection.toUpperCase()} ·{" "}
+          {game.players.some((player) => player !== null && player.score !== null)
+            ? "SCORE UPDATES RECEIVED"
+            : "POSE SCORING NOT CONNECTED"}
         </span>
         <span>FULL BODY IN FRAME. ALL ENERGY ON THE FLOOR.</span>
       </div>
@@ -60,7 +61,7 @@ export function Battle({
         </div>
       )}
       <div className="arena">
-        {game.players.map((player, i) => (
+        {game.players.map((player, i) => player && (
           <div
             className={`arena-player ${i === 0 ? "local" : "rival"}`}
             key={player.id}
@@ -68,7 +69,6 @@ export function Battle({
             <Video
               player={player}
               local={i === 0}
-              demo={game.demo}
               stream={streams[player.id]}
             >
               <span

@@ -16,11 +16,11 @@ Measured token contrasts: near-black on lime 16.65:1; muted text on charcoal 7.6
 
 ## Screens
 
-- **Landing:** editorial headline paired with an assembled game preview: opposing player canvases, scores, coach cue and upcoming move cards. Original vector performers replace stick-figure hero artwork. Three concise feature panels replace repetitive marketing sections.
-- **Matchmaking:** animated lime/coral signals converge around a shared center. The found state locks them together. Local video readiness, demo labeling and cancel remain explicit.
+- **Landing:** editorial headline paired with an explicitly illustrative walkthrough using the shared test chart. It does not fabricate match outcomes, player video, or scores.
+- **Matchmaking:** animated lime/coral signals converge around a shared center. Two connected clients are paired by the backend queue. Camera readiness and cancel remain explicit.
 - **Preparation:** a large replaceable coach stage, timer ring, upcoming moves, compact player checks and ready control. The ready action doesn't bypass the 30-second preview.
-- **Battle:** the reference inspired two large opposing feeds and dedicated HUD bands. Full source frames use contain-fit; labels, scores and feedback sit outside the media. The coach and pictogram queue remain visible below the feeds. Laptop-height rules compact secondary chrome. No reference screenshot or copyrighted gameplay art ships.
-- **Results:** a one-time geometric winner reveal, counted-up final scores and personal performance metrics. Next Opponent, Play Again and Leave express intent; the adapter owns continuation policy.
+- **Battle:** two player panels and dedicated HUD bands. The local camera preview is never published; remote video is clearly reported as unavailable. Scores stay blank until a scoring client submits data. The coach and pictogram queue remain visible below the feeds.
+- **Results:** the server reports scores only when both players submit them. Without scores, the UI reports that no winner is available instead of manufacturing a tie or performance metrics.
 
 ## Motion and accessibility
 
@@ -34,10 +34,10 @@ Desktop/laptop gameplay is primary. Compact-height rules preserve media space. A
 
 ## Validation status
 
-- Production build, TypeScript check and existing demo controller tests run successfully.
-- `test:render` renders all seven phases, disconnect/error states and an empty choreography state without a browser. It checks page headings, core guidance and absence of invented feedback. **This is not screenshot, layout or browser accessibility testing.**
-- Vite ran locally and returned HTTP 200.
+- Production build, TypeScript check, frontend adapter/render tests and backend game-service tests pass.
+- A two-client WebSocket smoke test confirmed queueing, pairing, shared chart delivery, preview, and readiness updates.
+- `test:render` covers all phases, disconnect/error states and an unavailable chart without a browser. **This is not screenshot, layout or browser accessibility testing.**
 - The three supplied images and all five downloaded 21st.dev static previews were visually inspected.
 - **Application browser QA is blocked:** available browser inventory was empty and the native UI provider failed to start. No claim is made that desktop/mobile layouts, reduced motion, camera hardware or keyboard behavior were visually verified.
 
-Required follow-up when a browser is available: inspect every phase at 1440×900, 1366×768, 768×1024 and 375×812; check landscape, 200% zoom, keyboard-only flow, OS reduced motion, camera permission denial, full-body framing, real remote tracks and avatar loading.
+Required follow-up when a browser is available: inspect every phase at 1440×900, 1366×768, 768×1024 and 375×812; check landscape, 200% zoom, keyboard-only flow, OS reduced motion, camera permission denial, and local camera framing.

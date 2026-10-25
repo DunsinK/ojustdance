@@ -1,12 +1,12 @@
-/** Supplied wordmark used unaltered, including its original proportions and colors. */
+/** Transparent wordmark keeps the original mark clear on dark surfaces. */
 export function Brand() {
   return (
     <img
       className="brand"
-      src="/brand/ojustdance-wordmark.png"
+      src="/brand/ojustdance-wordmark-transparent.png"
       alt="ojustdance"
-      width="2048"
-      height="683"
+      width="2172"
+      height="724"
     />
   );
 }

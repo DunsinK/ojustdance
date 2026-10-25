@@ -1,38 +1,43 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
-import type { GameRenderers } from "../../types";
-import { demoDance } from "../../demo/controller";
-import { AnimatedNumber, useQuietMotion } from "../../ui/Motion";
+import type { Choreography, GameRenderers } from "../../types";
+import { useQuietMotion } from "../../ui/Motion";
 import { Spark } from "../Brand";
 
 const chapters = [
   [
     "Meet",
-    "NO INTRODUCTIONS NEEDED.",
-    "We pair you with someone new. You both get the same challenge.",
+    "MATCH THROUGH THE SERVER.",
+    "Two connected players in the queue are paired into the same room.",
   ],
   [
-    "Generate",
-    "ONE ROUTINE. TWO TAKES.",
-    "AI puts the moves together. Neither player gets a head start.",
+    "Choose",
+    "ONE SHARED SAMPLE CHART.",
+    "Both players receive the same test routine from the backend.",
   ],
   [
     "Learn",
     "YOU’VE GOT 30 SECONDS.",
-    "Watch the choreography. Try the steps. Nobody expects a professional.",
+    "Watch the choreography and mark yourself ready before the round starts.",
   ],
   [
     "Dance",
-    "OKAY. SHOW US.",
-    "Cameras on. Whole body in frame. Follow the moves together.",
+    "CAMERA PREVIEW STAYS LOCAL.",
+    "Camera access is optional. This build does not publish video to the other player.",
   ],
   [
-    "Score",
-    "SETTLE IT ON THE FLOOR.",
-    "Movement scores decide the round. Then you can run it back.",
+    "Scoring",
+    "POSE SCORING IS NEXT.",
+    "The shared round clock works; scores and a winner wait for pose-scoring integration.",
   ],
 ];
-export function GameStory({ renderers }: { renderers: GameRenderers }) {
+export function GameStory({
+  renderers,
+  sampleChart,
+}: {
+  renderers: GameRenderers;
+  sampleChart: Choreography;
+}) {
   const quiet = useQuietMotion();
   const track = useRef<HTMLElement>(null);
   const [scrollEnabled, setScrollEnabled] = useState(false);
@@ -65,7 +70,7 @@ export function GameStory({ renderers }: { renderers: GameRenderers }) {
       <div className="story-sticky">
         <div className="story-heading">
           <span>02 / HOW THIS GOES</span>
-          <span>INTERACTIVE DEMO · NO CAMERA OR AUDIO</span>
+          <span>PRODUCT WALKTHROUGH · SAMPLE CHART</span>
         </div>
         <div className="story-composition">
           <div className="story-copy">
@@ -83,8 +88,8 @@ export function GameStory({ renderers }: { renderers: GameRenderers }) {
           </div>
           <div className={`story-screen story-screen-${chapter}`}>
             <div className="story-screen-label">
-              <span>ojustdance / SAMPLE ROUND</span>
-              <span>DEMO</span>
+              <span>ojustdance / LOCAL TEST BUILD</span>
+              <span>NOT LIVE</span>
             </div>
             {chapter === 0 ? (
               <div className="story-match">
@@ -99,16 +104,16 @@ export function GameStory({ renderers }: { renderers: GameRenderers }) {
                   initial={quiet ? false : { x: 45 }}
                   animate={{ x: 0 }}
                 >
-                  STRANGER<span>02</span>
+                  PLAYER 02<span>02</span>
                 </motion.div>
                 <p>Same room. No small talk.</p>
               </div>
             ) : chapter === 1 ? (
               <div className="story-routine">
                 <span>SHARED CHOREOGRAPHY</span>
-                <strong>{demoDance.title}</strong>
+                <strong>{sampleChart.title}</strong>
                 <div className="story-score-bars">
-                  {demoDance.moves.map((item, i) => (
+                  {sampleChart.moves.map((item, i) => (
                     <motion.div
                       key={item.id}
                       initial={quiet ? false : { scaleX: 0 }}
@@ -121,38 +126,34 @@ export function GameStory({ renderers }: { renderers: GameRenderers }) {
                     </motion.div>
                   ))}
                 </div>
-                <p>Sample data · Muse integration ready</p>
+                <p>Sample chart served by the backend · no audio</p>
               </div>
             ) : chapter === 2 ? (
               <div className="story-learn">
                 <Stage
-                  choreography={demoDance}
+                  choreography={sampleChart}
                   elapsedMs={move * 5000}
                   playing={false}
                 />
-                <button onClick={() => setMove((value) => (value + 1) % 6)}>
+                <button
+                  onClick={() =>
+                    setMove((value) => (value + 1) % sampleChart.moves.length)
+                  }
+                >
                   Try next move <span aria-hidden="true">→</span>
                 </button>
               </div>
             ) : (
               <div className="story-duel">
-                {["YOU", "STRANGER"].map((name, i) => (
+                {["YOU", "PLAYER 02"].map((name, i) => (
                   <div key={name} className={i ? "story-rival" : ""}>
                     <span>{name}</span>
-                    <strong>
-                      {chapter === 4 ? (
-                        <AnimatedNumber value={i ? 8610 : 9240} reveal />
-                      ) : (
-                        "30"
-                      )}
-                    </strong>
+                    <strong>—</strong>
                     <div className="story-body-space">
                       <span>
                         {chapter === 4
-                          ? i
-                            ? "GOOD"
-                            : "PERFECT"
-                          : "FULL BODY\nIN FRAME"}
+                          ? "SCORE\nUNAVAILABLE"
+                          : "CAMERA\nNOT SHARED"}
                       </span>
                       <i />
                       <i />
@@ -161,15 +162,15 @@ export function GameStory({ renderers }: { renderers: GameRenderers }) {
                     </div>
                     <small>
                       {chapter === 4
-                        ? "SIMULATED SCORE"
-                        : "VIDEO GOES HERE · DEMO"}
+                        ? "POSE SCORING NOT CONNECTED"
+                        : "LOCAL PREVIEW ONLY"}
                     </small>
                   </div>
                 ))}
                 <p>
                   {chapter === 4
-                    ? "You take this demo round. Rematch?"
-                    : `${demoDance.moves[move].name} → Reach up`}
+                    ? "No winner is declared until scoring is connected."
+                    : `${sampleChart.moves[move].name} → Shared server timer`}
                 </p>
               </div>
             )}

@@ -54,7 +54,7 @@ export function Score({
   player: Player;
   local: boolean;
   reveal?: boolean;
-  score?: number;
+  score?: number | null;
 }) {
   return (
     <div className={`score ${local ? "local" : "rival"}`}>
@@ -62,7 +62,11 @@ export function Score({
         {local ? "YOUR SCORE" : `${player.name.toUpperCase()}'S SCORE`}
       </span>
       <strong>
-        <AnimatedNumber value={score} reveal={reveal} />
+        {score === null ? (
+          <span aria-label="Score unavailable">—</span>
+        ) : (
+          <AnimatedNumber value={score} reveal={reveal} />
+        )}
       </strong>
     </div>
   );
@@ -71,12 +75,12 @@ export function SongBar({
   dance,
   remaining,
   elapsed,
-  demo,
+  sampleChart,
 }: {
   dance: Choreography | null;
   remaining: number;
   elapsed: number;
-  demo: boolean;
+  sampleChart: boolean;
 }) {
   return (
     <div className="song-bar">
@@ -87,7 +91,7 @@ export function SongBar({
         <strong>{dance?.title ?? "Loading routine"}</strong>
         <span>
           {dance?.bpm ?? "—"} BPM <b>•</b> {dance?.difficulty ?? "—"} <b>•</b>{" "}
-          {demo ? "DEMO TRACK · NO AUDIO" : "SHARED TRACK"}
+          {sampleChart ? "SAMPLE CHART · NO AUDIO" : "AUDIO NOT CONNECTED"}
         </span>
       </div>
       <div className="song-timing">

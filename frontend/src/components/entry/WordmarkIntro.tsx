@@ -64,13 +64,13 @@ export function WordmarkIntro() {
         </mask>
       </defs>
       <image
-        href="/brand/ojustdance-wordmark.png"
+        href="/brand/ojustdance-wordmark-transparent.png"
         width="2048"
         height="683"
         mask={`url(#${id})`}
       />
       <motion.image
-        href="/brand/ojustdance-wordmark.png"
+        href="/brand/ojustdance-wordmark-transparent.png"
         width="2048"
         height="683"
         initial={{ opacity: quiet || skip ? 1 : 0 }}

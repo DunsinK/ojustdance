@@ -693,32 +693,6 @@ button:active:not(:disabled) {
   align-items: center;
   gap: 8px;
 }
-.demo-tools {
-  border-top: 1px solid var(--line);
-  margin-top: 24px;
-  color: var(--muted);
-  font-size: 12px;
-}
-.demo-tools summary {
-  padding: 16px 0;
-  cursor: pointer;
-  min-height: 48px;
-}
-.demo-tools summary > span {
-  margin-left: 14px;
-  font-size: 11px;
-}
-.demo-tools > div {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 4px 0 12px;
-}
-.demo-tools .button {
-  font-size: 12px;
-  min-height: 44px;
-}
 .status-screen {
   min-height: 60vh;
   display: flex;
@@ -738,7 +712,7 @@ button:active:not(:disabled) {
 .status-screen p {
   max-width: 550px;
 }
-/* Video canvases reserve unobstructed media space; demo avatars are clearly labeled. */
+/* Video canvases reserve unobstructed media space. */
 .local {
   --player: var(--lime);
   --scene: var(--scene-local);
@@ -819,36 +793,6 @@ button:active:not(:disabled) {
   flex-shrink: 0;
   min-height: 38px;
 }
-.demo-scene {
-  position: absolute;
-  inset: 0;
-  background: var(--scene);
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.scene-type {
-  position: absolute;
-  left: 24px;
-  top: 6%;
-  font-size: clamp(90px, 15vw, 230px);
-  line-height: 1;
-  font-weight: 900;
-  color: var(--player);
-  opacity: 0.065;
-  letter-spacing: -0.08em;
-}
-.scene-floor {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 17%;
-  background: var(--ink);
-  opacity: 0.32;
-  border-top: 1px solid var(--muted);
-}
 .performer {
   position: relative;
   height: 100%;
@@ -877,24 +821,6 @@ button:active:not(:disabled) {
 }
 .figure-hair {
   fill: var(--ink);
-}
-.frame-corner {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  border-color: var(--player);
-  border-style: solid;
-  opacity: 0.6;
-}
-.top-left {
-  top: 16px;
-  left: 16px;
-  border-width: 1px 0 0 1px;
-}
-.bottom-right {
-  bottom: 16px;
-  right: 16px;
-  border-width: 0 1px 1px 0;
 }
 .empty-video {
   display: flex;
@@ -1855,9 +1781,6 @@ progress::-moz-progress-bar {
   .battle-context {
     padding-block: 9px;
   }
-  .is-battle .demo-tools {
-    margin-top: 16px;
-  }
 }
 @media (max-width: 800px) {
   .hero-grid {
@@ -2510,16 +2433,6 @@ progress::-moz-progress-bar {
   .countdown-banner span:last-child {
     text-align: right;
   }
-  .demo-tools summary > span {
-    display: block;
-    margin: 5px 0 0;
-  }
-  .demo-tools > div {
-    gap: 10px;
-  }
-  .demo-tools .button {
-    width: 100%;
-  }
   .results {
     margin-top: 5px;
   }
@@ -2599,10 +2512,6 @@ progress::-moz-progress-bar {
   .camera-in-session {
     flex-wrap: wrap;
     gap: 8px;
-  }
-  .scene-type {
-    font-size: 100px;
-    left: 12px;
   }
 }
 @media (max-width: 380px) {

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { GameSnapshot, GameRenderers } from "../types";
+import type { GameSnapshot, GameRenderers, Player } from "../types";
 import { MoveQueue, formatTime } from "../components/GameUI";
 import { Button } from "../ui/Button";
 
@@ -67,12 +67,16 @@ export function Preview({
               <span>{dance?.difficulty ?? "—"}</span>
               <span>{formatTime(dance?.durationMs ?? 0)} ROUND</span>
             </div>
-            <div className="ready-status">
-              <span>{game.players[1].name}</span>
-              <strong>
-                {game.players[1].ready ? "✓ Ready to dance" : "Getting ready…"}
-              </strong>
-            </div>
+            {game.players[1] && (
+              <div className="ready-status">
+                <span>{game.players[1].name}</span>
+                <strong>
+                  {game.players[1].ready
+                    ? "✓ Ready to dance"
+                    : "Getting ready…"}
+                </strong>
+              </div>
+            )}
             <Button
               arrow={!game.players[0].ready}
               disabled={game.players[0].ready || !dance}
@@ -91,12 +95,13 @@ export function Preview({
             </p>
           </div>
           <div className="prep-players">
-            {game.players.map((p, i) => (
+            {game.players
+              .filter((player): player is Player => player !== null)
+              .map((p, i) => (
               <Video
                 key={p.id}
                 player={p}
                 local={i === 0}
-                demo={game.demo}
                 stream={streams[p.id]}
               />
             ))}

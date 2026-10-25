@@ -7,7 +7,6 @@ export function VideoPanel({
   player,
   stream,
   local,
-  demo,
   children,
 }: VideoPanelProps) {
   const video = useRef<HTMLVideoElement>(null);
@@ -30,13 +29,7 @@ export function VideoPanel({
           <small>{local ? "PLAYER 01" : "PLAYER 02"}</small>
         </span>
         <span className="video-state">
-          {stream
-            ? local
-              ? "CAMERA ON"
-              : "LIVE VIDEO"
-            : demo
-              ? "DEMO AVATAR"
-              : "CAMERA OFF"}
+          {stream ? (local ? "LOCAL PREVIEW" : "LIVE VIDEO") : "CAMERA OFF"}
         </span>
       </header>
       <div className="video-viewport">
@@ -48,16 +41,6 @@ export function VideoPanel({
             muted={local}
             className={local ? "mirrored" : ""}
           />
-        ) : demo ? (
-          <div className="demo-scene">
-            <span className="scene-type" aria-hidden="true">
-              {local ? "01" : "02"}
-            </span>
-            <div className="scene-floor" />
-            <Performer rival={!local} />
-            <span className="frame-corner top-left" />
-            <span className="frame-corner bottom-right" />
-          </div>
         ) : (
           <div className="empty-video">
             <MoveIconPlaceholder />
@@ -76,11 +59,9 @@ export function VideoPanel({
         {children ?? (
           <>
             <span>
-              {demo && !stream
-                ? "Illustrated stand-in · no live video"
-                : local
-                  ? "Keep your whole body in frame"
-                  : "A new face. The same beat."}
+              {local
+                ? "Camera video stays on this device"
+                : "Remote video is not connected yet"}
             </span>
             <span>{player.ready ? "✓ Ready" : "Getting ready"}</span>
           </>
@@ -117,7 +98,9 @@ export function ChoreographyStage({
     <section className="choreo-stage" aria-label="Choreography target">
       <header>
         <span className="eyebrow">YOUR CHOREOGRAPHY</span>
-        <span className="badge">AVATAR PREVIEW</span>
+        <span className="badge">
+          {choreography?.sample ? "SAMPLE CHART" : "CHOREOGRAPHY"}
+        </span>
       </header>
       {loading ? (
         <div className="stage-empty" role="status">

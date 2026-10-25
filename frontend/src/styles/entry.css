@@ -146,17 +146,6 @@
   line-height: 1;
   opacity: 0.8;
 }
-.entry-avatar {
-  height: 330px;
-  width: 240px;
-  flex-shrink: 0;
-  --entry-shirt: var(--ink);
-  --entry-pants: var(--surface-raised);
-}
-.entry-avatar-rival {
-  transform: scaleX(-1);
-  --entry-shirt: var(--white);
-}
 .entry-stage-center {
   display: flex;
   align-items: center;
@@ -421,8 +410,7 @@
   animation: entry-beat 0.75s ease-in-out infinite;
   border-color: var(--lime);
 }
-.signal-failed .signal-node,
-.signal-cancelled .signal-node {
+.signal-failed .signal-node {
   background: var(--surface);
   border: 1px solid var(--control-line);
   color: var(--muted);
@@ -477,9 +465,6 @@
   min-height: 100px;
   aspect-ratio: 4/3;
 }
-.entry-content .demo-tools {
-  margin-top: 20px;
-}
 @keyframes entry-beat {
   50% {
     scale: 1.12;
@@ -488,10 +473,6 @@
 @media (min-width: 1500px) {
   .entry-stage-floor {
     min-height: 390px;
-  }
-  .entry-avatar {
-    height: 390px;
-    width: 275px;
   }
 }
 @media (max-width: 900px) {
@@ -588,11 +569,6 @@
   .entry-stage-center > span:last-child,
   .entry-beat-marks {
     display: none;
-  }
-  .entry-avatar {
-    height: 245px;
-    width: 175px;
-    padding-top: 8px;
   }
   .entry-player-label {
     font-size: 8px;

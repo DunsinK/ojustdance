@@ -12,7 +12,7 @@ export interface Player {
   id: string;
   name: string;
   color: "cobalt" | "coral";
-  score: number;
+  score: number | null;
   ready: boolean;
   /** Optional pose feedback supplied by the scoring adapter; never invented by the UI. */
   feedback?: { rating: "PERFECT" | "GOOD" | "MISS"; combo: number };
@@ -50,29 +50,28 @@ export interface Choreography {
   durationMs: number;
   previewDurationMs: number;
   moves: readonly DanceMove[];
+  sample?: boolean;
   audioUrl?: string;
   animationUrl?: string;
 }
 export interface BattleResult {
   winnerId: string | null;
-  scores: Record<string, number>;
-  accuracy: number;
-  bestCombo: number;
-  perfectMoves: number;
+  scores: Record<string, number | null>;
+  accuracy: number | null;
+  bestCombo: number | null;
+  perfectMoves: number | null;
 }
 export interface GameSnapshot {
   phase: Phase;
   connection: Connection;
-  players: readonly [Player, Player];
+  players: readonly [Player, Player | null];
   choreography: Choreography | null;
   remainingMs: number;
   elapsedMs: number;
   result: BattleResult | null;
   error?: string;
-  demo: boolean;
 }
-export type GameAction =
-  "find" | "cancel" | "ready" | "rematch" | "next" | "leave" | "retry";
+export type GameAction = "find" | "cancel" | "ready" | "next" | "leave" | "retry";
 /** Adapter owns authoritative clock, room events, and continuation policy. Unsubscribe on cleanup. */
 export interface GameAdapter {
   subscribe: (listener: (state: GameSnapshot) => void) => () => void;
@@ -84,7 +83,6 @@ export interface VideoPanelProps {
   player: Player;
   stream?: MediaStream;
   local: boolean;
-  demo: boolean;
   children?: React.ReactNode;
 }
 export interface ChoreographyStageProps {

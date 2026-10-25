@@ -1,72 +1,71 @@
 # ojustdance frontend
 
-Vite + React + TypeScript. A complete, explicitly labeled local demo with lime/coral rhythm-game UI. Backend and `../demo` remain untouched.
+Vite + React + TypeScript frontend connected to the Express API and WebSocket backend, with a lime/coral rhythm-game UI. Battle uses the shared test chart; Solo and Practice use the Supabase-backed chart library.
 
 ## Run and validate
 
-Node 22.18+ recommended (native TypeScript stripping is used by the controller tests).
+Node 22.18+ recommended.
 
 ```sh
-cd frontend
-npm install
-npm run dev
+npm install --prefix backend
+npm install --prefix frontend
+# Configure backend/.env and run backend/sql/init.sql in Supabase (see backend/README.md).
+npm start --prefix backend
 ```
 
-Open the URL Vite prints, normally http://localhost:5173. Production and validation commands:
+In a second terminal:
 
 ```sh
-npm run typecheck
-npm test
-npm run test:render
-npm run build
-npm run preview
+npm run dev --prefix frontend
 ```
 
-There is no configured lint command. `test:render` uses the esbuild bundled with Vite to perform **non-browser** component smoke checks. It does not verify screen layout. See `DESIGN.md` for the exact validation status and browser limitation.
+Open the URL Vite prints (normally http://localhost:5173) in **two browser tabs**, open the **Play Now** mode picker, and choose **Battle** in both to test matchmaking and a shared round.
 
-Vercel: root `frontend`, build `npm run build`, output `dist`. No demo environment variables or credentials are needed.
+Run frontend checks with `npm run typecheck --prefix frontend`, `npm test --prefix frontend`, `npm run test:render --prefix frontend`, and `npm run build --prefix frontend`. Run backend tests with `npm test --prefix backend`. The render smoke checks are non-browser component checks; they do not validate layout.
 
-## Demo journey
+For a separately hosted backend, set `VITE_BACKEND_URL` to its HTTP(S) origin for WebSocket matchmaking and optionally set `VITE_API_URL` to its HTTP(S) origin for the chart API. Local Vite development proxies `/api` and `/ws` to `http://localhost:3001`, so no frontend `.env` is required for local development.
 
-Find a match → searching (4.2s) → opponent found → preview (30s) → **I'm ready to dance** → 3–2–1 → battle (30s) → results. Ready can be set during or after the preview. Next Opponent returns to searching; Play Again repeats with the simulated rival. Cancel/Leave return home and release the local camera.
+## Game modes and limits
 
-Open **Demo controls** during a round to skip timers or simulate an error/disconnect. A skipped preview still requires Ready. Demo scores, feedback, combos, choreography metadata and opponents are fixtures. There is no actual music playback, generated choreography, network matching, pose estimation or video transmission.
+**Battle** is available at `/battle` and pairs two connected players through `WS /ws`, supplies both the same sample chart, tracks readiness, and owns the preview/countdown/battle timers. Matchmaking state is in memory.
 
-Camera is optional and never requested automatically. Enable camera requests video only for a local preview (HTTPS/localhost required). Declining permission leaves the full demo usable. Turn Off and Leave stop tracks; a late permission response after leaving is discarded. Real publishing must be owned by the production video integration with explicit sharing consent.
+**Solo** lists saved charts from `GET /api/charts` and runs camera pose matching locally in the browser. **Practice** records from the camera or imports a video, analyzes pose samples locally with MediaPipe, and publishes the chart JSON plus optional preview video through `POST /api/charts`. Chart rows live in Supabase Postgres and uploaded preview videos live in the configured Supabase Storage bucket.
+
+Configure `backend/.env` with `SUPABASE_URL` and a server-only `SUPABASE_SECRET_KEY` (or `SUPABASE_SERVICE_ROLE_KEY`). Run `backend/sql/init.sql` once in Supabase before using chart listing/publishing. The backend does not automatically execute schema changes. MediaPipe's runtime and pose models are loaded by the browser from their configured CDNs.
+
+`shared/sample-chart.json` is still clearly labeled test content and is used by Battle. Battle scores remain unavailable unless a scoring client submits updates through the adapter; the server does not invent a winner when scores are missing.
 
 ## Code map
 
 | Path                           | Responsibility                                                                                             |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `src/App.tsx`                  | Adapter subscription, phase routing, shared header/progress, camera consent, demo tools, motion preference |
+| `src/App.tsx`                  | Adapter subscription, phase routing, shared header/progress, camera consent, motion preference             |
 | `src/screens/Landing.tsx`      | Headline, clearly labeled game showcase, three-step feature presentation                                   |
 | `src/screens/Room.tsx`         | Matching animation, camera readiness, preparation/preview                                                  |
 | `src/screens/Battle.tsx`       | Player feeds, score bands, feedback, countdown, coach and move queue                                       |
 | `src/screens/Results.tsx`      | Outcome, final score reveals, performance and continuation                                                 |
-| `src/components/Brand.tsx`     | Real supplied wordmark and decorative icon primitives                                                      |
-| `src/components/Performer.tsx` | Original demo vector performers and move pictograms                                                        |
+| `src/components/Brand.tsx`     | Supplied wordmark and decorative icon primitives                                                            |
+| `src/components/ModeShell.tsx` | Navigation shell for the deep-linked game modes                                                             |
+| `src/pages/`                   | Solo chart library and Practice mapper                                                                      |
+| `src/pose/`                    | Browser-side pose capture, chart parsing, and scoring                                                       |
+| `src/lib/api.ts`               | Health, chart listing, chart loading, and publishing API calls                                               |
+| `src/components/Performer.tsx` | Illustrated choreography avatar and move pictograms                                                       |
 | `src/components/Stage.tsx`     | Replaceable stream panel and choreography renderer                                                         |
 | `src/components/GameUI.tsx`    | Shared score, timing, song and upcoming-move HUD components                                                |
 | `src/ui/`                      | Reusable CTA, number animation, viewport reveal, reduced-motion context                                    |
 | `src/types.ts`                 | Frontend-facing contracts; additive optional pose feedback                                                 |
-| `src/demo/controller.ts`       | Isolated demo fixtures, timers, feedback and continuation                                                  |
+| `src/services/live-game-adapter.ts` | WebSocket client and frontend-facing game adapter                                                     |
 | `src/hooks/useCamera.ts`       | Consent, failure handling, stale-request protection and cleanup                                            |
 | `src/styles/`                  | Central tokens and responsive game layouts                                                                 |
-| `public/brand/`                | Unmodified supplied logo copies; reference screenshot is not shipped                                       |
+| `public/brand/`                | Brand images, including the transparent animated wordmark asset                                            |
 | `public/fonts/`                | Self-hosted Space Grotesk variable font and OFL license                                                    |
-| `tests/`                       | Demo flow and non-browser rendering smoke checks                                                           |
+| `tests/`                       | WebSocket adapter and non-browser rendering smoke checks                                                   |
 
-`COMPONENT-REFERENCES.md` records the five 21st.dev reviews and selection decisions. Motion is the only new npm dependency; no Tailwind, icon library or second animation library was added.
+The mode routes are `/battle`, `/solo`, and `/map` (Practice). Route-level lazy loading keeps MediaPipe out of the landing-page bundle. `react-router-dom` handles route navigation and `@mediapipe/tasks-vision` powers browser-side pose analysis; no Tailwind or icon package is used.
 
-## Integration handoff
+## Backend connection
 
-These are frontend-facing interfaces, not invented server routes or event names. Agree actual wire schemas with each teammate and translate at the boundary.
-
-### Socket.IO / room state
-
-Implement `GameAdapter` with stable `subscribe`, `getSnapshot` and `dispatch`. Return the same immutable snapshot object until an event changes it; then notify listeners. Replace `DemoController` in `main.tsx`, mount `<App adapter={realAdapter} />`, and omit demo controls. Set `demo: false` when using real systems.
-
-The server adapter owns room identity, peer readiness, connection states, authoritative elapsed/remaining time, final scores and outcomes. Derive the client clock from a server timestamp/offset. Unsubscribe events and dispose transports on cleanup. `rematch`/`next` express user intent; future winner-stays rules belong to the adapter, not presentation. Refresh currently restarts the demo; production room rejoin/deep links require backend identity policy.
+The frontend connects to `WS /ws`. It sends `find`, `cancel`, `leave`, `ready`, or `score`; the backend responds with a `hello`, complete `snapshot` updates, or an `error`. The server currently owns queue pairing, readiness, shared phase timing, and result aggregation in memory.
 
 ### LiveKit / WebRTC
 
@@ -76,7 +75,7 @@ Production camera ownership, publishing, subscriptions, autoplay recovery and re
 
 ### MediaPipe / scoring
 
-Existing `PoseFrame` and `ScoreUpdate` contracts remain. Submit opted-in tracking updates through `GameAdapter.submitScore` and receive reconciled scores in snapshots. `Player.feedback?: { rating: 'PERFECT' | 'GOOD' | 'MISS'; combo: number }` is additive and optional. The UI shows neutral guidance when absent; only the demo controller invents feedback. Mount landmark overlays in your custom Video renderer.
+Submit opted-in tracking updates through `GameAdapter.submitScore`. Scores are nullable until received; the server checks value ranges and identifies the submitting player from its WebSocket connection. It does not verify client-reported scores. The UI does not fabricate ratings, combos, or winners.
 
 `Player.color` deliberately retains the legacy `'cobalt' | 'coral'` values for compatibility. UI local/rival roles now resolve to lime/coral. No backend migration is required for the branding change.
 
