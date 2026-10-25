@@ -34,9 +34,8 @@ export function App({
   );
   const camera = useCamera();
   const main = useRef<HTMLElement>(null);
-  const [reduceMotion, setReduceMotion] = useState(false);
   const systemReduced = useReducedMotion();
-  const quiet = reduceMotion || !!systemReduced;
+  const quiet = !!systemReduced;
   const { phase } = game;
   const [cancelledSearch, setCancelledSearch] = useState(false);
   const home = phase === "home" && !cancelledSearch;
@@ -118,7 +117,7 @@ export function App({
           {home ? (
             <nav className="landing-nav" aria-label="Main navigation">
               <a href="#how-it-works">How to play</a>
-              <a href="#ground-rules">Good energy only</a>
+              <a href="#ground-rules">Your move</a>
             </nav>
           ) : (
             <ol className="round-steps" aria-label="Round progress">
@@ -155,7 +154,7 @@ export function App({
             transition={{ duration: 0.32 }}
           >
             {home ? (
-              <Landing onFind={() => act("find")} />
+              <Landing onFind={() => act("find")} renderers={renderers} />
             ) : lobby ? (
               <Matchmaking
                 game={game}
@@ -255,18 +254,7 @@ export function App({
           </motion.div>
         </main>
         <footer className="site-footer">
-          <span>DIFFERENT PEOPLE. SAME FREQUENCY.</span>
-          <button
-            className="motion-toggle"
-            aria-pressed={quiet}
-            disabled={!!systemReduced}
-            onClick={() => setReduceMotion((v) => !v)}
-          >
-            <span aria-hidden="true" className="toggle-track">
-              <i />
-            </span>
-            {systemReduced ? "Reduced motion (system)" : "Reduce motion"}
-          </button>
+          <span>NO SMALL TALK. JUST DANCE.</span>
           <span>ojustdance / HACKTX 2026</span>
         </footer>
       </div>
