@@ -1,4 +1,5 @@
-import { useReducedMotion } from "motion/react";
+import { useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { Link, useNavigate } from "react-router-dom";
 import { Brand } from "../components/Brand";
 import { ReducedMotionContext } from "../ui/Motion";
@@ -85,6 +86,16 @@ const exploreSteps = [
 export function Home() {
   const navigate = useNavigate();
   const quiet = !!useReducedMotion();
+  const [launching, setLaunching] = useState(false);
+
+  function goPlay() {
+    if (launching) return;
+    setLaunching(true);
+    window.setTimeout(
+      () => navigate("/camera-check", { state: { fromPlay: true } }),
+      quiet ? 0 : 340,
+    );
+  }
 
   return (
     <ReducedMotionContext.Provider value={quiet}>
@@ -139,21 +150,30 @@ export function Home() {
                 A stranger. An AI-made routine. Thirty seconds to make it yours.
               </p>
 
-              <button
+              <motion.button
                 type="button"
-                className="gate-play"
-                onClick={() => navigate("/battle")}
+                className={`gate-play${launching ? " launching" : ""}`}
+                onClick={goPlay}
+                layoutId={quiet ? undefined : "play-portal"}
+                animate={
+                  launching && !quiet
+                    ? { scale: 1.12, opacity: 0.85 }
+                    : { scale: 1, opacity: 1 }
+                }
+                transition={{ duration: 0.32, ease: [0.2, 0.8, 0.2, 1] }}
               >
                 <span className="gate-play-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M8 5.5v13l11-6.5L8 5.5Z" />
                   </svg>
                 </span>
-                <span className="gate-play-label">PLAY NOW</span>
+                <span className="gate-play-label">
+                  {launching ? "OPENING…" : "PLAY NOW"}
+                </span>
                 <span className="gate-play-arrow" aria-hidden="true">
                   ↗
                 </span>
-              </button>
+              </motion.button>
 
               <div className="gate-modes" role="list">
                 {modes.map((mode) => (
@@ -216,7 +236,7 @@ export function Home() {
               <button
                 type="button"
                 className="gate-play gate-play--compact"
-                onClick={() => navigate("/battle")}
+                onClick={goPlay}
               >
                 <span className="gate-play-label">ENTER BATTLE</span>
                 <span className="gate-play-arrow" aria-hidden="true">

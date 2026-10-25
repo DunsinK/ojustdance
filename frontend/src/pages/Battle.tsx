@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import {
   LiveChartMatch,
   type LiveMatchResult,
 } from "../components/LiveChartMatch";
 import { parseChartDocument } from "../pose/parseChart";
 import type { ChartDocument } from "../pose/types";
+import { hasCameraCheckPassed } from "../lib/cameraGate";
 import {
   connectSocket,
   disconnectSocket,
@@ -18,6 +19,7 @@ import "./Battle.css";
 type Phase = "idle" | "searching" | "matched" | "live" | "result";
 
 export function Battle() {
+  const cameraOk = hasCameraCheckPassed();
   const [phase, setPhase] = useState<Phase>("idle");
   const [name, setName] = useState("Dancer");
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -30,6 +32,7 @@ export function Battle() {
   const matchIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!cameraOk) return;
     const socket = connectSocket();
 
     const onWaiting = () => {
@@ -101,7 +104,11 @@ export function Battle() {
       socket.emit("queue:leave");
       disconnectSocket();
     };
-  }, []);
+  }, [cameraOk]);
+
+  if (!cameraOk) {
+    return <Navigate to="/camera-check" replace />;
+  }
 
   function queueUp() {
     setError(null);
