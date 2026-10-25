@@ -5,6 +5,8 @@ import type { MotionThumbnails } from '../keyframes/contracts.js';
 export type RelativeLandmark = [number, number, number, number];
 
 export type PoseFrame = {
+  /** performance.now() immediately before inference; sensor latency is not implied. */
+  capturedAtMs?: number;
   /** Wall / session time in seconds (caller-defined clock). */
   t: number;
   landmarks: RelativeLandmark[];

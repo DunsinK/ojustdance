@@ -4,14 +4,10 @@ import type { ThumbnailAppearance } from '../keyframes/contracts';
 import { MotionThumbnailQueue } from './MotionThumbnailQueue';
 import { useSavedChartThumbnails } from '../keyframes/useSavedChartThumbnails';
 import { useEffect, useRef, useState } from "react";
-import {
-  applyScoreTick,
-  gradePose,
-  sampleAtTime,
-  type ScoreTick,
-} from "../pose/gradePose";
+import { DanceScorer, buildReferenceTrack, scoringConfig, type ScoreSnapshot } from "../pose/gradePose";
+import { waitForMediaEvent } from '../keyframes/media';
 import { PoseStage } from "../pose/PoseStage";
-import type { ChartDocument, RelativeLandmark } from "../pose/types";
+import type { ChartDocument } from "../pose/types";
 import { usePoseSource } from "../pose/usePoseSource";
 import "./LiveChartMatch.css";
 
@@ -43,11 +39,10 @@ type Props = {
   onShowMotionThumbnailsChange?: (enabled: boolean) => void;
 };
 
-const INITIAL_TICK: ScoreTick = {
-  score: 0,
-  combo: 0,
-  maxCombo: 0,
-  label: "…",
+const INITIAL_TICK: ScoreSnapshot = {
+  schemaVersion: 'dance-score/2', score: 0, maxScore: 10000, combo: 0, maxCombo: 0,
+  accuracy: 0, averageAccuracy: 0, form: 0, timing: 0, coverage: 0, offsetMs: null,
+  timeSec: 0, label: '…', trackingMisses: 0, processedOpportunities: 0,
 };
 
 export function LiveChartMatch({
@@ -74,26 +69,30 @@ export function LiveChartMatch({
   const [playing, setPlaying] = useState(false);
   const [finished, setFinished] = useState(false);
   const [chartTime, setChartTime] = useState(0);
-  const [tick, setTick] = useState<ScoreTick>(INITIAL_TICK);
+  const [tick, setTick] = useState<ScoreSnapshot>(INITIAL_TICK);
   const [accuracy, setAccuracy] = useState(0);
   const [finalAvg, setFinalAvg] = useState(0);
+  const [timingToleranceMs, setTimingToleranceMs] = useState(50);
+  const [referenceDuration, setReferenceDuration] = useState<number | null>(null);
+  const [scoringNotice, setScoringNotice] = useState<string | null>(null);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
   /** Chart preview is often opposite the mirrored live cam — default flip on. */
   const [mirrorChart, setMirrorChart] = useState(true);
 
-  const liveLandmarksRef = useRef<RelativeLandmark[]>([]);
-  const hasPoseRef = useRef(false);
-  const tickRef = useRef<ScoreTick>(INITIAL_TICK);
-  const lastGradeAtRef = useRef(0);
+  const scorerRef = useRef<DanceScorer | null>(null);
   const chartTimeRef = useRef(0);
-  const accuracySumRef = useRef(0);
-  const accuracyCountRef = useRef(0);
   const completedRef = useRef(false);
   const playingRef = useRef(false);
+  const startingRef = useRef(false);
+  const startAttemptRef = useRef(0);
+  const sessionStartedAtRef = useRef(0);
+  const endingStartedAtRef = useRef<number | null>(null);
   const onScoreUpdateRef = useRef(onScoreUpdate);
   const lastScoreEmitRef = useRef(0);
-  onScoreUpdateRef.current = onScoreUpdate;
+  useEffect(() => { onScoreUpdateRef.current = onScoreUpdate; }, [onScoreUpdate]);
 
-  const duration = Math.max(
+  const duration = referenceDuration ?? Math.max(
     chart.durationSec || 0,
     chart.samples.at(-1)?.t ?? 0,
     1
@@ -103,128 +102,88 @@ export function LiveChartMatch({
     mode: "camera",
     enabled: true,
     onFrame: (frame) => {
-      hasPoseRef.current = frame.hasPose;
-      if (frame.hasPose) liveLandmarksRef.current = frame.landmarks;
+      const scorer = scorerRef.current;
+      if (!playingRef.current || !scorer || frame.capturedAtMs == null) return;
+      const now = performance.now(), video = refVideoRef.current;
+      const receivedTime = endingStartedAtRef.current !== null
+        ? scorer.reference.durationSec + (now - endingStartedAtRef.current) / 1000
+        : videoUrl && video ? video.currentTime : (now - sessionStartedAtRef.current) / 1000;
+      const inferenceDelaySec = Math.max(0, now - frame.capturedAtMs) / 1000;
+      scorer.addObservation({ songTimeSec: receivedTime - inferenceDelaySec * (video?.playbackRate ?? 1),
+        receivedAtSongTimeSec: receivedTime, frame: frame.hasPose ? frame.canonicalFrame ?? null : null });
     },
   });
 
-  useEffect(() => {
-    tickRef.current = tick;
-  }, [tick]);
-
-  useEffect(() => {
-    playingRef.current = playing;
-  }, [playing]);
+  useEffect(() => () => {
+    startAttemptRef.current++;
+    playingRef.current = false;
+    scorerRef.current = null;
+  }, []);
 
   function finishMatch(endT: number) {
     if (completedRef.current) return;
     completedRef.current = true;
     playingRef.current = false;
-    setPlaying(false);
-    setFinished(true);
-    setChartTime(endT);
-    chartTimeRef.current = endT;
-    const avg =
-      accuracyCountRef.current > 0
-        ? accuracySumRef.current / accuracyCountRef.current
-        : 0;
-    setFinalAvg(avg);
+    const result = scorerRef.current?.finish(endT) ?? INITIAL_TICK;
+    setPlaying(false); setFinished(true); setTick(result); setAccuracy(result.accuracy);
+    setChartTime(endT); chartTimeRef.current = endT; setFinalAvg(result.averageAccuracy);
     refVideoRef.current?.pause();
-    onComplete?.({
-      score: Math.round(tickRef.current.score),
-      maxCombo: tickRef.current.maxCombo,
-      avgAccuracy: avg,
-      durationSec: endT,
-    });
+    onComplete?.({ score: Math.round(result.score), maxCombo: result.maxCombo, avgAccuracy: result.averageAccuracy, durationSec: endT });
+  }
+
+  function beginReferenceEnd() {
+    if (playingRef.current && endingStartedAtRef.current === null) endingStartedAtRef.current = performance.now();
   }
 
   useEffect(() => {
     if (!playing) return;
-
     let raf = 0;
     const loop = () => {
-      if (!playingRef.current) return;
-
-      const refVid = refVideoRef.current;
-      let t = chartTimeRef.current;
-      const now = performance.now();
-      const dt =
-        lastGradeAtRef.current > 0
-          ? Math.min(0.08, (now - lastGradeAtRef.current) / 1000)
-          : 1 / 30;
-      lastGradeAtRef.current = now;
-
-      if (refVid && videoUrl && !refVid.paused) {
-        t = refVid.currentTime;
-        if (refVid.ended || t >= duration - 0.05) {
-          finishMatch(Math.min(t, duration));
-          return;
-        }
-      } else if (!videoUrl) {
-        t = Math.min(duration, chartTimeRef.current + dt);
-        if (t >= duration) {
-          finishMatch(duration);
-          return;
-        }
+      const scorer = scorerRef.current;
+      if (!playingRef.current || !scorer) return;
+      const now = performance.now(), video = refVideoRef.current;
+      let time = videoUrl && video ? video.currentTime : (now - sessionStartedAtRef.current) / 1000;
+      const end = scorer.reference.durationSec;
+      if (time >= end || video?.ended) {
+        if (endingStartedAtRef.current === null) endingStartedAtRef.current = videoUrl ? now : sessionStartedAtRef.current + end * 1000;
       }
-
-      chartTimeRef.current = t;
-
-      const sample = sampleAtTime(chart.samples, t);
-      let nextAcc = 0;
-      if (sample && hasPoseRef.current && liveLandmarksRef.current.length) {
-        nextAcc = gradePose(liveLandmarksRef.current, sample.landmarks).accuracy;
-        accuracySumRef.current += nextAcc;
-        accuracyCountRef.current += 1;
-      } else {
-        nextAcc = 0.15;
-      }
-
-      const nextTick = applyScoreTick(tickRef.current, nextAcc, dt);
-      tickRef.current = nextTick;
-      setTick(nextTick);
-      setAccuracy(nextAcc);
-      setChartTime(t);
-
-      if (now - lastScoreEmitRef.current > 200) {
-        lastScoreEmitRef.current = now;
-        onScoreUpdateRef.current?.(Math.round(nextTick.score));
-      }
-
+      if (endingStartedAtRef.current !== null) time = end + (now - endingStartedAtRef.current) / 1000;
+      const result = scorer.advance(time);
+      setTick(result); setAccuracy(result.accuracy);
+      chartTimeRef.current = Math.min(time, end); setChartTime(chartTimeRef.current);
+      if (now - lastScoreEmitRef.current > 200) { lastScoreEmitRef.current = now; onScoreUpdateRef.current?.(Math.round(result.score)); }
+      // Processing grace accepts delayed results, not late dancing outside ±30–70 ms.
+      if (time >= end + (scorer.config.timingToleranceMs + scorer.config.processingDeadlineMs) / 1000) { finishMatch(end); return; }
       raf = requestAnimationFrame(loop);
     };
-
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, videoUrl, duration, chart.samples]);
+  }, [playing, videoUrl]);
 
   async function start() {
-    if (playingRef.current) return;
-    completedRef.current = false;
-    accuracySumRef.current = 0;
-    accuracyCountRef.current = 0;
-    lastGradeAtRef.current = 0;
-    lastScoreEmitRef.current = 0;
-    chartTimeRef.current = 0;
-    tickRef.current = INITIAL_TICK;
-    setTick(INITIAL_TICK);
-    setAccuracy(0);
-    setChartTime(0);
-    setFinalAvg(0);
-    setFinished(false);
-
-    const refVid = refVideoRef.current;
-    if (refVid && videoUrl) {
-      refVid.currentTime = 0;
-      try {
-        await refVid.play();
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    playingRef.current = true;
-    setPlaying(true);
+    if (playingRef.current || startingRef.current) return;
+    startingRef.current = true; setStarting(true); setPlaybackError(null);
+    const attempt = ++startAttemptRef.current;
+    try {
+      const video = refVideoRef.current;
+      if (videoUrl && video && video.readyState < 2) await waitForMediaEvent(video, 'loadeddata', () => video.load());
+      if (attempt !== startAttemptRef.current) return;
+      const config = scoringConfig({ timingToleranceMs });
+      const track = buildReferenceTrack(chart, { config, reflectDance: !mirrorChart, timeline: videoUrl ? 'source-video' : 'chart',
+        ...(videoUrl && video ? { durationSec: video.duration, imageSize: { width: video.videoWidth, height: video.videoHeight } } : {}) });
+      const scorer = new DanceScorer(track, config);
+      if (videoUrl && video) { video.currentTime = 0; await video.play(); }
+      if (attempt !== startAttemptRef.current) { video?.pause(); return; }
+      scorerRef.current = scorer; sessionStartedAtRef.current = performance.now(); endingStartedAtRef.current = null;
+      completedRef.current = false; lastScoreEmitRef.current = 0; chartTimeRef.current = 0;
+      setReferenceDuration(track.durationSec);
+      setScoringNotice(track.scorableDurationSec === 0 ? 'No usable reference poses. Reimport this chart in Map to enable scoring.' : track.warnings[0] ?? null);
+      setTick(INITIAL_TICK); setAccuracy(0); setChartTime(0); setFinalAvg(0); setFinished(false);
+      playingRef.current = true; setPlaying(true);
+    } catch (error) {
+      if (attempt === startAttemptRef.current) setPlaybackError(error instanceof Error ? error.message : 'Could not start playback');
+    } finally { startingRef.current = false; if (attempt === startAttemptRef.current) setStarting(false); }
   }
 
   useEffect(() => {
@@ -239,7 +198,7 @@ export function LiveChartMatch({
 
   const progress = Math.min(1, chartTime / duration);
   const meterClass =
-    accuracy >= 0.82
+    tick.label === 'TRACKING' || tick.label === 'NO REFERENCE' ? 'unavailable' : accuracy >= 0.82
       ? "hot"
       : accuracy >= 0.65
         ? "good"
@@ -247,7 +206,7 @@ export function LiveChartMatch({
           ? "ok"
           : "miss";
 
-  let liveStatus = "Enable camera permission";
+  let liveStatus: string;
   if (error) liveStatus = error;
   else if (!ready) liveStatus = "Loading MediaPipe…";
   else if (playing)
@@ -295,9 +254,10 @@ export function LiveChartMatch({
                 <input
                   type="checkbox"
                   checked={mirrorChart}
+                  disabled={playing || starting}
                   onChange={(e) => setMirrorChart(e.target.checked)}
                 />
-                Mirror video
+                Mirror video and scoring
               </label>
             )}
           </div>
@@ -311,7 +271,7 @@ export function LiveChartMatch({
               playsInline
               muted
               preload="auto"
-              onEnded={() => finishMatch(duration)}
+              onEnded={beginReferenceEnd}
             />
           ) : (
             <div className="live-ref-video placeholder">
@@ -353,6 +313,20 @@ export function LiveChartMatch({
         </label></div>
       </>}
 
+      <div className="live-scoring-controls">
+        <label>Timing tolerance ±{timingToleranceMs} ms
+          <input type="range" min="30" max="70" step="5" value={timingToleranceMs} disabled={playing || starting || mode === 'battle'}
+            title={mode === 'battle' ? 'Battle uses the same ±50 ms timing policy for both players' : undefined}
+            onChange={(event) => setTimingToleranceMs(Number(event.target.value))} />
+        </label>
+        <span>Form {Math.round(tick.form * 100)}% · Visible evidence {Math.round(tick.coverage * 100)}%
+          {tick.offsetMs !== null && ` · ${Math.abs(tick.offsetMs)} ms ${tick.offsetMs < 0 ? 'early' : tick.offsetMs > 0 ? 'late' : 'on time'}`}</span>
+      </div>
+      {scoringNotice && <p className="hint" role="status">{scoringNotice}</p>}
+      {tick.label === 'TRACKING' && <p className="hint" role="status">Not enough fresh, visible body points to judge this moment. Keep your body in frame.</p>}
+      {playbackError && <div role="alert"><p className="api-error">{playbackError}</p>
+        <button type="button" className="btn ghost" onClick={() => void start()}>Retry playback</button></div>}
+
       <div className="live-meter" aria-hidden="true">
         <div
           className={`live-meter-fill ${meterClass}`}
@@ -375,10 +349,10 @@ export function LiveChartMatch({
           <button
             type="button"
             className="btn primary"
-            disabled={!ready}
+            disabled={!ready || starting}
             onClick={() => void start()}
           >
-            Start
+            {starting ? "Starting…" : "Start"}
           </button>
         )}
         {controlled && !playing && !finished && (

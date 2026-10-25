@@ -66,7 +66,12 @@ Restart `npm run dev` after changing env vars (Vite only reads them at startup).
 
 **Battle** (`/battle`) uses Socket.io: queue → pair → shared chart → live rival scores. Test with two local browser windows (no deploy). LiveKit can add A/V later; scores stay on your server.
 
-Grading: `src/pose/gradePose.ts`. Socket helper: `src/lib/socket.ts`.
+Grading: [`src/scoring`](src/scoring/README.md), reexported from `src/pose/gradePose.ts`.
+It compares canonical limb geometry and movement with a default ±50 ms timing
+band (adjustable from 30–70 ms before starting), handles partially hidden joints,
+and awards a fixed maximum of 10,000 independent of display refresh rate.
+Run `npm run test:scoring` for its deterministic regression suite.
+Socket helper: `src/lib/socket.ts`.
 
 ## API smoke test
 

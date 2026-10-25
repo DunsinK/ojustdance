@@ -198,6 +198,7 @@ export function usePoseSource({
               } catch { /* Unusable provider observations are excluded from keyframe selection. */ }
             }
             onFrameRef.current?.({
+              capturedAtMs: now,
               t: mode === "file" ? videoEl.currentTime : now / 1000,
               landmarks: pose ? normalizePose(raw) : [],
               hasPose: pose,

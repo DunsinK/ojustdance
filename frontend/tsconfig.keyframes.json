@@ -27,6 +27,7 @@
     "src/pose/exportChart.ts",
     "src/pose/parseChart.ts",
     "src/pose/analyzeVideo.ts",
+    "src/scoring/**/*.ts",
     "src/keyframes/observationFraming.ts",
     "src/keyframes/media.ts",
     "src/keyframes/thumbnailAssets.ts",
