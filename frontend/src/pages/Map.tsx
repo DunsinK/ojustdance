@@ -544,6 +544,7 @@ export function Map() {
               mirror={mirror}
               status={status}
               recording={transport === "recording"}
+              fitVideo={mode === "file"}
             />
           )}
           </div>

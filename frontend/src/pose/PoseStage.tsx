@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import { useState, type RefObject } from "react";
 import "./PoseStage.css";
 
 type Props = {
@@ -9,6 +9,8 @@ type Props = {
   recording?: boolean;
   /** Show native controls (useful for imported files). */
   controls?: boolean;
+  /** Let imported video dimensions determine the stage ratio instead of cropping. */
+  fitVideo?: boolean;
 };
 
 export function PoseStage({
@@ -18,9 +20,15 @@ export function PoseStage({
   status,
   recording = false,
   controls = false,
+  fitVideo = false,
 }: Props) {
+  const [videoAspectRatio, setVideoAspectRatio] = useState<string | null>(null);
+
   return (
-    <div className={`pose-stage${recording ? " recording" : ""}`}>
+    <div
+      className={`pose-stage${recording ? " recording" : ""}${fitVideo ? " fit-video" : ""}${videoAspectRatio ? " fit-video-ready" : ""}`}
+      style={videoAspectRatio ? { aspectRatio: videoAspectRatio } : undefined}
+    >
       <video
         ref={videoRef}
         className={mirror ? "mirror" : undefined}
@@ -28,6 +36,16 @@ export function PoseStage({
         muted
         autoPlay
         controls={controls}
+        onLoadStart={() => {
+          if (fitVideo) setVideoAspectRatio(null);
+        }}
+        onLoadedMetadata={(event) => {
+          if (!fitVideo) return;
+          const { videoWidth, videoHeight } = event.currentTarget;
+          if (videoWidth > 0 && videoHeight > 0) {
+            setVideoAspectRatio(`${videoWidth} / ${videoHeight}`);
+          }
+        }}
       />
       <canvas ref={canvasRef} className={mirror ? "mirror" : undefined} />
       {status && <div className="pose-status">{status}</div>}
