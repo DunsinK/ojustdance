@@ -7,7 +7,7 @@ const links = [
   { to: "/battle", label: "Battle" },
   { to: "/solo", label: "Solo" },
   { to: "/map", label: "Map" },
-  { to: "/charts", label: "Charts" },
+  { to: "/dances", label: "Dances" },
   { to: "/api-test", label: "API" },
 ];
 

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   LiveChartMatch,
   type LiveMatchResult,
@@ -20,6 +20,10 @@ function formatDuration(sec: number | null) {
 type Phase = "browse" | "loading" | "play";
 
 export function SoloBattles() {
+  const [searchParams] = useSearchParams();
+  const danceParam = searchParams.get("dance");
+  const autoStarted = useRef(false);
+
   const [charts, setCharts] = useState<ChartSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,11 +43,17 @@ export function SoloBattles() {
         const rows = await fetchCharts();
         if (!cancelled) {
           setCharts(rows);
-          setSelectedId(rows[0]?.id ?? null);
+          const preferred =
+            (danceParam && rows.some((r) => r.id === danceParam)
+              ? danceParam
+              : null) ||
+            rows[0]?.id ||
+            null;
+          setSelectedId(preferred);
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load charts");
+          setError(err instanceof Error ? err.message : "Failed to load dances");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -52,17 +62,18 @@ export function SoloBattles() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [danceParam]);
 
   const selected = charts.find((c) => c.id === selectedId) ?? null;
 
-  async function startSolo() {
-    if (!selectedId) return;
+  async function startSolo(id = selectedId) {
+    if (!id) return;
+    setSelectedId(id);
     setPhase("loading");
     setLoadError(null);
     setLastResult(null);
     try {
-      const detail = await fetchChart(selectedId);
+      const detail = await fetchChart(id);
       const doc = parseChartDocument(detail.chartJson);
       if (detail.title) doc.title = detail.title;
       setActiveChart(doc);
@@ -70,10 +81,17 @@ export function SoloBattles() {
       setPhase("play");
     } catch (err) {
       console.error(err);
-      setLoadError(err instanceof Error ? err.message : "Could not start chart");
+      setLoadError(err instanceof Error ? err.message : "Could not start dance");
       setPhase("browse");
     }
   }
+
+  useEffect(() => {
+    if (!danceParam || loading || error || autoStarted.current) return;
+    if (!charts.some((c) => c.id === danceParam)) return;
+    autoStarted.current = true;
+    void startSolo(danceParam);
+  }, [danceParam, loading, error, charts]);
 
   function exitMatch() {
     setPhase("browse");
@@ -124,7 +142,7 @@ export function SoloBattles() {
 
       {!loading && !error && charts.length === 0 && (
         <div className="solo-empty">
-          <p>No charts yet.</p>
+          <p>No dances yet.</p>
           <Link to="/map" className="btn primary">
             Map one
           </Link>

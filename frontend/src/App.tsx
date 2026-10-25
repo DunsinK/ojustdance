@@ -22,7 +22,8 @@ export default function App() {
             <Route path="battle" element={<Battle />} />
             <Route path="solo" element={<SoloBattles />} />
             <Route path="map" element={<Map />} />
-            <Route path="charts" element={<Charts />} />
+            <Route path="dances" element={<Charts />} />
+            <Route path="charts" element={<Navigate to="/dances" replace />} />
             <Route path="api-test" element={<ApiTest />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

@@ -130,7 +130,7 @@ export function Home() {
               <Link to="/" aria-current="page">
                 Home
               </Link>
-              <Link to="/charts">Charts</Link>
+              <Link to="/dances">Dances</Link>
               <Link to="/battle">Battle</Link>
               <Link to="/solo">Solo</Link>
               <Link to="/map">Map</Link>
