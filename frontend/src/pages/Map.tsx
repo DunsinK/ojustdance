@@ -273,7 +273,7 @@ export function Map() {
     setFileName(file.name);
     setMode("file");
     setTitle((t) => t || file.name.replace(/\.[^.]+$/, ""));
-    setPreview(file);
+    // Preview is set after analyze bakes skeleton into a composite WebM.
 
     // Analyze runs after landmarker is ready (see effect below via analyzing trigger)
     setAnalyzing(true);
@@ -293,11 +293,12 @@ export function Map() {
     (async () => {
       try {
         video.pause();
-        const samples = await analyzeVideoFile({
+        const { samples, previewBlob } = await analyzeVideoFile({
           video,
           landmarker,
           canvas: canvasRef.current,
           sampleHz: SAMPLE_HZ,
+          bakePreview: true,
           signal: ac.signal,
           onProgress: ({ t, duration }) => {
             setAnalyzePct(duration ? Math.round((t / duration) * 100) : 0);
@@ -320,6 +321,13 @@ export function Map() {
         ]);
         setSelectedId(id);
         setPlayheadSec(0);
+        if (previewBlob) {
+          setPreview(previewBlob);
+        } else {
+          // Fallback: original file if bake unsupported
+          const res = await fetch(fileUrl);
+          setPreview(await res.blob());
+        }
         await video.play().catch(() => undefined);
       } catch (err) {
         if (!ac.signal.aborted) {

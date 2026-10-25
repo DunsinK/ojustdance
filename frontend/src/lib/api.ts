@@ -76,7 +76,12 @@ export async function publishChart(opts: {
   videoFilename?: string;
 }): Promise<PublishChartResult> {
   const form = new FormData();
-  form.append("chart", JSON.stringify(opts.chart));
+  // Send chart as a file part so large pose JSON isn't capped by Multer fieldSize.
+  form.append(
+    "chart",
+    new Blob([JSON.stringify(opts.chart)], { type: "application/json" }),
+    "chart.json"
+  );
   if (opts.title) form.append("title", opts.title);
   if (opts.difficulty) form.append("difficulty", opts.difficulty);
   if (opts.video) {

@@ -6,7 +6,11 @@ import { ensureChartBucket, uploadChartVideo } from "../supabase.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: config.maxVideoBytes },
+  limits: {
+    fileSize: config.maxVideoBytes,
+    /** Chart JSON is often sent as a text field and exceeds Multer's 1MB default. */
+    fieldSize: 64 * 1024 * 1024,
+  },
 });
 
 export const chartsRouter = Router();
