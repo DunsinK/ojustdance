@@ -43,7 +43,7 @@ export function Charts() {
     const q = query.trim().toLowerCase();
     if (!q) return dances;
     return dances.filter((d) => {
-      const hay = `${d.title} ${d.difficulty} ${d.model ?? ""}`.toLowerCase();
+      const hay = `${d.title} ${d.model ?? ""}`.toLowerCase();
       return hay.includes(q);
     });
   }, [dances, query]);
@@ -114,7 +114,6 @@ export function Charts() {
               ) : (
                 <div className="dance-card-placeholder">No preview</div>
               )}
-              <span className="dance-card-diff">{dance.difficulty}</span>
             </div>
 
             <div className="dance-card-body">

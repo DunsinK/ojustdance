@@ -49,8 +49,6 @@ export function Map() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playheadSec, setPlayheadSec] = useState(0);
   const [title, setTitle] = useState("");
-  const [difficulty, setDifficulty] =
-    useState<"easy" | "normal" | "hard">("easy");
   const [model, setModel] = useState<ModelKey>("lite");
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -464,7 +462,8 @@ export function Map() {
       const doc = buildChartDocument({
         segments,
         title,
-        difficulty,
+        // DB still expects a value; not exposed in the Map UI.
+        difficulty: "normal",
         model,
         sampleRateHz: SAMPLE_HZ,
       });
@@ -745,19 +744,6 @@ export function Map() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
-          </label>
-          <label className="field">
-            Difficulty
-            <select
-              value={difficulty}
-              onChange={(e) =>
-                setDifficulty(e.target.value as "easy" | "normal" | "hard")
-              }
-            >
-              <option value="easy">Easy</option>
-              <option value="normal">Normal</option>
-              <option value="hard">Hard</option>
-            </select>
           </label>
           <label className="field">
             Model

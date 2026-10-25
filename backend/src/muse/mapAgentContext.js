@@ -29,7 +29,7 @@ Map is the chart editor. Goal: capture dance poses into a timeline, attach a pre
    - Clear wipes the whole draft.
    - Scrub the playhead when not recording; in file mode scrub seeks the video.
 5. **Chart draft sidebar**
-   - Song title, difficulty (easy/normal/hard), MediaPipe model (lite/full/heavy — change before starting the stage).
+   - Song title, MediaPipe model (lite/full/heavy — change before starting the stage). Difficulty is not shown; publish stores a fixed default.
    - Stats: clips, samples, length (seconds).
 6. **Publish**
    - Needs pose samples AND a preview video (Stop a camera take, or Import).
