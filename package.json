@@ -1,0 +1,12 @@
+{
+  "name": "ojustdance",
+  "private": true,
+  "scripts": {
+    "backend": "node backend/server.js",
+    "start": "npm run backend",
+    "heroku-postbuild": "npm install --prefix backend --omit=dev"
+  },
+  "engines": {
+    "node": "20.x"
+  }
+}
