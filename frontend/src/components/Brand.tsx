@@ -1,15 +1,29 @@
-/** Supplied wordmark used unaltered, including its original proportions and colors. */
-export function Brand() {
+/** Brand marks. Prefer `logo` (transparent-friendly asset) on dark surfaces. */
+export function Brand({
+  variant = "logo",
+  className = "",
+}: {
+  variant?: "logo" | "wordmark" | "icon";
+  className?: string;
+}) {
+  const src =
+    variant === "icon"
+      ? "/brand/ojustdance-icon.png"
+      : variant === "wordmark"
+        ? "/brand/ojustdance-wordmark.png"
+        : "/brand/ojustdance-logo.png";
+
   return (
     <img
-      className="brand"
-      src="/brand/ojustdance-wordmark.png"
+      className={`brand brand--${variant}${className ? ` ${className}` : ""}`}
+      src={src}
       alt="ojustdance"
-      width="2048"
-      height="683"
+      width={variant === "icon" ? 512 : 2048}
+      height={variant === "icon" ? 512 : 683}
     />
   );
 }
+
 export function Arrow() {
   return (
     <svg
@@ -23,6 +37,7 @@ export function Arrow() {
     </svg>
   );
 }
+
 export function Spark({ className = "" }: { className?: string }) {
   return (
     <svg

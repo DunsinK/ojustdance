@@ -16,7 +16,7 @@ export function Layout() {
     <div className="shell">
       <header className="topbar">
         <NavLink to="/" className="wordmark" end aria-label="ojustdance home">
-          <Brand />
+          <Brand variant="logo" />
         </NavLink>
         <nav className="nav" aria-label="Primary">
           {links.map((link) => (
