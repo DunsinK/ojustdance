@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Link, useNavigate } from "react-router-dom";
 import { Brand } from "../components/Brand";
+import { WordmarkIntro } from "../components/entry/WordmarkIntro";
 import { ReducedMotionContext } from "../ui/Motion";
 import "./Home.css";
 
@@ -138,7 +139,7 @@ export function Home() {
 
           <main className="gate-main">
             <section className="gate-glass" aria-labelledby="gate-title">
-              <Brand variant="logo" className="gate-hero-brand" />
+              <WordmarkIntro className="gate-hero-brand" />
 
               <h1 id="gate-title">
                 NO SMALL TALK.

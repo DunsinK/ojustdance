@@ -17,7 +17,7 @@ const guides = [
   "M1581 344h100q-8-64-69-43t-25 82q35 30 81 4",
   "M1440 263h386 M1759 165l-28 190",
 ];
-export function WordmarkIntro() {
+export function WordmarkIntro({ className = "" }: { className?: string }) {
   const quiet = useQuietMotion();
   const [skip] = useState(hasPlayed);
   const id = useId();
@@ -26,7 +26,7 @@ export function WordmarkIntro() {
   }, []);
   return (
     <svg
-      className="festival-wordmark"
+      className={`festival-wordmark${className ? ` ${className}` : ""}`}
       viewBox="220 120 1650 390"
       role="img"
       aria-label="ojustdance"

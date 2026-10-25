@@ -179,12 +179,12 @@
   animation: gate-rise 520ms var(--ease) both;
 }
 
-.gate-hero-brand {
+.gate-glass .gate-hero-brand {
   width: min(580px, 96%);
   height: auto;
   display: block;
   mix-blend-mode: lighten;
-  margin-bottom: 0.15rem;
+  margin: 0;
 }
 
 .gate-glass h1 {
