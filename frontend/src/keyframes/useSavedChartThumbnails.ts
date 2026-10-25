@@ -12,14 +12,14 @@ import type { MotionThumbnails, ThumbnailAppearance } from './contracts.js'
 
 /** Existing cue timestamps can be restyled without repeating pose-track extraction or selection. */
 export function useSavedChartThumbnails(chart: ChartDocument, sourceUrl: string | null,
-  appearance: ThumbnailAppearance = DEFAULT_THUMBNAIL_APPEARANCE) {
+  appearance: ThumbnailAppearance = DEFAULT_THUMBNAIL_APPEARANCE, enabled = true) {
   const key = `${CURRENT_SELECTION_ALGORITHM}:${CURRENT_THUMBNAIL_ASSETS}:${appearance.version}:${appearance.background}:${appearance.centered}:${sourceUrl}:${chart.recordedAt}:${chart.durationSec}:${JSON.stringify(chart.segments)}`
   const [revision, setRevision] = useState(0)
   const embeddedMatches = revision === 0 && Boolean(chart.motionThumbnails && isCurrentThumbnailTrack(chart.motionThumbnails) && matchesThumbnailAppearance(chart.motionThumbnails, appearance))
   const retry = useCallback(() => setRevision((value) => value + 1), [])
   const [result, setResult] = useState<{ key: string; plan: MotionThumbnails | null; message: string; error: string | null } | null>(null)
   useEffect(() => {
-    if (embeddedMatches || !sourceUrl) return
+    if (!enabled || embeddedMatches || !sourceUrl) return
     const controller = new AbortController()
     const { signal } = controller
     const progress = (message: string) => { if (!signal.aborted) setResult({ key, plan: null, message, error: null }) }
@@ -58,7 +58,8 @@ export function useSavedChartThumbnails(chart: ChartDocument, sourceUrl: string 
       }
     })()
     return () => controller.abort()
-  }, [chart, sourceUrl, key, revision, appearance, embeddedMatches])
+  }, [chart, sourceUrl, key, revision, appearance, embeddedMatches, enabled])
+  if (!enabled) return { plan: null, loading: false, message: '', error: null, retry }
   if (!sourceUrl) return { plan: null, loading: false, message: '', error: 'This chart has no original video for thumbnails.', retry }
   if (embeddedMatches) return { plan: chart.motionThumbnails!, loading: false, message: '', error: null, retry }
   const current = result?.key === key ? result : null

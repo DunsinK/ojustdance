@@ -99,6 +99,14 @@ Expand **Inspect selected motion frames** in Map to seek individual reference
 poses or export a local analysis for reproducible selector comparisons.
 Cards use one high-quality still each, with centered cutouts at 384 × 432 pixels.
 Targets less than a quarter second apart keep the stronger representative.
+
+In **Battle**, **Show upcoming move thumbnails** is optional and defaults to off.
+Enable it in the lobby or during a match. The preference carries between matches
+while the Battle page remains open. Switching it off hides the strip and its
+controls and cancels pending thumbnail preparation. Loading/errors never delay
+match start or reset reference playback. The option is unavailable without a
+reference video. Solo keeps its existing on-by-default behavior and has the same
+toggle. This is a local display preference; matchmaking/scoring payloads are unchanged.
 An editor **clip** is a recorded/imported timeline section; thumbnail cues are
 selected from its poses. Missing people and individual mask failures are handled
 per frame/cue, preserving the usable result. See [recovery and review notes](src/keyframes/RECOVERY_AND_REVIEW.md).

@@ -27,6 +27,7 @@ export function Battle() {
   const [startToken, setStartToken] = useState<number | undefined>(undefined);
   const [rivalScore, setRivalScore] = useState(0);
   const [result, setResult] = useState<MatchResultPayload | null>(null);
+  const [showMotionThumbnails, setShowMotionThumbnails] = useState(false);
   const matchIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -162,6 +163,8 @@ export function Battle() {
         <LiveChartMatch
           mode="battle"
           controlled
+          showMotionThumbnails={showMotionThumbnails}
+          onShowMotionThumbnailsChange={setShowMotionThumbnails}
           chart={chart}
           videoUrl={match.chart.videoUrl}
           title={`${match.chart.title} vs ${match.rival.name}`}
@@ -190,6 +193,12 @@ export function Battle() {
       {error && <p className="api-error">{error}</p>}
 
       <section className="battle-lobby">
+        <label className="battle-thumbnail-option">
+          <input type="checkbox" checked={showMotionThumbnails}
+            onChange={(event) => setShowMotionThumbnails(event.target.checked)} />
+          Show upcoming move thumbnails
+        </label>
+        <p className="meta-sub">Optional reference poses below the dance video. You can change this during a match.</p>
         {phase === "idle" && (
           <>
             <label className="field">

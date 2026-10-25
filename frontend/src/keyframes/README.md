@@ -186,6 +186,13 @@ excluding pauses; encoder startup/frame timing may add a small alignment error.
 
 ## Automatic app integration
 
+Battle exposes an opt-in thumbnail toggle in the lobby and shared match player,
+off by default. `useSavedChartThumbnails` accepts a fourth `enabled` argument;
+disabled consumers skip cache/media/model work and abort pending preparation when
+switched off. No thumbnail loading/error gates match start. The option stays local
+to the player, preserves reference playback, and disables itself when no reference
+video exists. Solo keeps thumbnails enabled by default with an option to hide them.
+
 - **Map:** Import and analysis finish, or a camera recording is finalized, then
   preparation starts automatically. Deleting/packing clips regenerates the plan,
   reusing bounded session image caches. Preview playback/pause/scrub drives the

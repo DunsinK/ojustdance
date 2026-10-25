@@ -38,6 +38,9 @@ type Props = {
   rivalName?: string;
   /** Hide local Start/Retry (parent drives lifecycle). */
   controlled?: boolean;
+  /** Local display preference; the battle lobby owns it across matches. */
+  showMotionThumbnails?: boolean;
+  onShowMotionThumbnailsChange?: (enabled: boolean) => void;
 };
 
 const INITIAL_TICK: ScoreTick = {
@@ -59,10 +62,14 @@ export function LiveChartMatch({
   rivalScore = null,
   rivalName = "Rival",
   controlled = false,
+  showMotionThumbnails,
+  onShowMotionThumbnailsChange,
 }: Props) {
   const refVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [localShowThumbnails, setLocalShowThumbnails] = useState(mode === "solo");
+  const thumbnailsEnabled = (showMotionThumbnails ?? localShowThumbnails) && Boolean(videoUrl);
   const [thumbnailAppearance, setThumbnailAppearance] = useState<ThumbnailAppearance>({ ...DEFAULT_THUMBNAIL_APPEARANCE });
-  const thumbnails = useSavedChartThumbnails(chart, videoUrl, thumbnailAppearance);
+  const thumbnails = useSavedChartThumbnails(chart, videoUrl, thumbnailAppearance, thumbnailsEnabled);
   const [leadInSec, setLeadInSec] = useState(3);
   const [playing, setPlaying] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -324,12 +331,21 @@ export function LiveChartMatch({
         </div>
       </div>
 
-      {videoUrl && <ThumbnailAppearanceControls appearance={thumbnailAppearance} onChange={setThumbnailAppearance} />}
-      {thumbnails.loading && <p className="motion-thumbnail-status" role="status">{thumbnails.message}</p>}
-      {thumbnails.error && <div role="alert"><p className="api-error">Motion thumbnails: {thumbnails.error}</p>
+      <div className="motion-thumbnail-controls"><label>
+        <input type="checkbox" checked={thumbnailsEnabled} disabled={!videoUrl}
+          onChange={(event) => {
+            setLocalShowThumbnails(event.target.checked);
+            onShowMotionThumbnailsChange?.(event.target.checked);
+          }} /> Show upcoming move thumbnails
+      </label>
+        {!videoUrl && <span className="meta-sub">A reference video is needed for move thumbnails.</span>}
+      </div>
+      {thumbnailsEnabled && <ThumbnailAppearanceControls appearance={thumbnailAppearance} onChange={setThumbnailAppearance} />}
+      {thumbnailsEnabled && thumbnails.loading && <p className="motion-thumbnail-status" role="status">{thumbnails.message} You can keep dancing while previews load.</p>}
+      {thumbnailsEnabled && thumbnails.error && <div role="alert"><p className="api-error">Motion thumbnails: {thumbnails.error}</p>
         {videoUrl && <button type="button" className="btn ghost" onClick={thumbnails.retry}>Retry thumbnails</button>}
       </div>}
-      {thumbnails.plan && <>
+      {thumbnailsEnabled && thumbnails.plan && <>
         <MotionThumbnailQueue track={thumbnails.plan} mediaRef={refVideoRef} mirrored={mirrorChart} leadInSec={leadInSec} onRetry={thumbnails.retry} />
         <div className="motion-thumbnail-controls"><label>Preview lead-in
           <input type="range" min="1.5" max="6" step="0.5" value={leadInSec} onChange={(event) => setLeadInSec(Number(event.target.value))} />
@@ -359,7 +375,7 @@ export function LiveChartMatch({
           <button
             type="button"
             className="btn primary"
-            disabled={!ready || thumbnails.loading}
+            disabled={!ready}
             onClick={() => void start()}
           >
             Start
