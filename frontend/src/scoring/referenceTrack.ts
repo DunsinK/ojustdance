@@ -47,7 +47,12 @@ export interface ReferenceOptions {
 export function buildReferenceTrack(chart: ChartDocument, options: ReferenceOptions = {}): ReferenceTrack {
   const config = scoringConfig(options.config)
   const durationSec = options.durationSec ?? chart.durationSec
-  if (!Number.isFinite(durationSec) || durationSec <= 0 || durationSec > 1200 || chart.samples.length > 18000) throw new Error('Scoring requires a finite reference up to 20 minutes / 18,000 samples')
+  // Product target is ~10–20s battles; hard cap ~90s (~1,350 samples @ 15 Hz).
+  const maxDurationSec = 90
+  const maxSamples = 1350
+  if (!Number.isFinite(durationSec) || durationSec <= 0 || durationSec > maxDurationSec || chart.samples.length > maxSamples) {
+    throw new Error(`Scoring requires a finite reference up to ${maxDurationSec}s / ${maxSamples.toLocaleString()} samples (aim for 10–20s)`)
+  }
   const warnings = new Set<string>()
   const nodes: TimedPose[] = chart.samples.map((sample) => {
     const timeSec = options.timeline === 'source-video' ? sample.sourceTimeSec ?? sample.t : sample.t

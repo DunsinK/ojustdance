@@ -395,12 +395,24 @@ export function LiveChartMatch({
       if (videoUrl && refVid) await waitForReferenceVideo(refVid);
 
       const config = scoringConfig();
+      const chartDuration =
+        Number.isFinite(chart.durationSec) && chart.durationSec > 0
+          ? chart.durationSec
+          : chart.samples.at(-1)?.t;
+      const videoDuration = refVid?.duration;
+      // Prefer chart length — MediaRecorder WebMs often report Infinity/NaN.
+      const durationSec =
+        Number.isFinite(chartDuration) && (chartDuration as number) > 0
+          ? (chartDuration as number)
+          : Number.isFinite(videoDuration) && (videoDuration as number) > 0
+            ? (videoDuration as number)
+            : undefined;
       const referenceOptions = {
         reflectDance: !mirrorChart,
         timeline: videoUrl ? ("source-video" as const) : ("chart" as const),
-        ...(videoUrl && refVid
+        ...(durationSec != null ? { durationSec } : {}),
+        ...(videoUrl && refVid && refVid.videoWidth > 0
           ? {
-              durationSec: refVid.duration,
               imageSize: {
                 width: refVid.videoWidth,
                 height: refVid.videoHeight,

@@ -787,6 +787,14 @@ export function Map() {
             </div>
           </dl>
 
+          {duration > 20 && (
+            <p className={`hint${duration > 45 ? " api-error" : ""}`}>
+              {duration > 45
+                ? `This take is ${duration.toFixed(0)}s — battles work best at 10–20s (max ~90s for scoring).`
+                : `Tip: keep routines around 10–20s for battles (currently ${duration.toFixed(0)}s).`}
+            </p>
+          )}
+
           {selected && (
             <p className="hint">
               Selected clip: {selected.startSec.toFixed(1)}s →{" "}
