@@ -27,7 +27,7 @@ export function WordmarkIntro({ className = "" }: { className?: string }) {
   return (
     <svg
       className={`festival-wordmark${className ? ` ${className}` : ""}`}
-      viewBox="220 120 1650 390"
+      viewBox="100 120 1900 400"
       role="img"
       aria-label="ojustdance"
     >
@@ -64,13 +64,13 @@ export function WordmarkIntro({ className = "" }: { className?: string }) {
         </mask>
       </defs>
       <image
-        href="/brand/ojustdance-wordmark.png"
+        href="/brand/ojustdance-logo.png"
         width="2048"
         height="683"
         mask={`url(#${id})`}
       />
       <motion.image
-        href="/brand/ojustdance-wordmark.png"
+        href="/brand/ojustdance-logo.png"
         width="2048"
         height="683"
         initial={{ opacity: quiet || skip ? 1 : 0 }}
