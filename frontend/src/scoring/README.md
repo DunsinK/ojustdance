@@ -39,6 +39,10 @@ landmark index or response wrapper.
 `pose/gradePose.ts` reexports the public entry points for the existing player.
 It no longer implements a separate landmark-distance scorer.
 
+The separate [attempt recorder](../attempts/README.md) saves raw reference/player
+observations, call timing, and a fixed original result. `/attempts` or the CLI
+can replay those inputs through the current scorer without another dance.
+
 ## 1. Compare body shape
 
 For each arm and leg, we measure:

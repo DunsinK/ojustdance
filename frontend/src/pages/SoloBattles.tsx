@@ -106,6 +106,8 @@ export function SoloBattles() {
         </p>
       </header>
 
+      <p><Link to="/attempts">Saved attempts — replay and compare scoring algorithms</Link></p>
+
       {loading && <p className="meta-sub">Loading charts…</p>}
       {error && (
         <p className="api-error">

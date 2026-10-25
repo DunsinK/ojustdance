@@ -73,6 +73,14 @@ and awards a fixed maximum of 10,000 independent of display refresh rate.
 Run `npm run test:scoring` for its deterministic regression suite.
 Socket helper: `src/lib/socket.ts`.
 
+Keep **Save pose data for scoring tests** enabled when dancing. Completed or
+ended attempts save locally with their joint points and fixed original score.
+Open **Attempts** (`/attempts`) to rerun the current scorer on the same inputs,
+compare results, inspect skeleton points, or export/import a recording. No
+camera or inference is needed during replay. See the
+[attempt recording guide](src/attempts/README.md), including the command-line
+`npm run replay:attempt -- recording.json` regression workflow.
+
 ## API smoke test
 
 1. Start the backend: `cd backend && npm run dev`

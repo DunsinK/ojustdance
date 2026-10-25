@@ -9,10 +9,12 @@
     "lint": "cd .. && frontend/node_modules/.bin/eslint --config frontend/eslint.config.js frontend shared/skeleton/src",
     "preview": "vite preview",
     "build:skeleton": "tsc -p ../shared/skeleton/tsconfig.json",
-    "test": "npm run test:skeleton && npm run test:keyframes && npm run test:scoring",
+    "test": "npm run test:skeleton && npm run test:keyframes && npm run test:scoring && npm run test:attempts",
     "test:skeleton": "npm run build:skeleton && node --test ../shared/skeleton/tests/skeleton.test.mjs",
     "test:keyframes": "npm run build:skeleton && tsc -p tsconfig.keyframes.json && node --test tests/keyframes.test.mjs",
-    "test:scoring": "npm run build:skeleton && tsc -p tsconfig.keyframes.json && node --test tests/scoring.test.mjs"
+    "test:scoring": "npm run build:skeleton && tsc -p tsconfig.keyframes.json && node --test tests/scoring.test.mjs",
+    "test:attempts": "npm run build:skeleton && tsc -p tsconfig.keyframes.json && node --test tests/attempts.test.mjs",
+    "replay:attempt": "npm run build:skeleton && tsc -p tsconfig.keyframes.json && node scripts/replay-attempt.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.1.1",
