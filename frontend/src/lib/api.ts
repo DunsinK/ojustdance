@@ -96,3 +96,26 @@ export async function publishChart(opts: {
 
   return res.json() as Promise<PublishChartResult>;
 }
+
+export type AgentChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export async function askMapAgent(
+  messages: AgentChatMessage[]
+): Promise<string> {
+  const res = await fetch(`${getApiUrl()}/agent/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages }),
+  });
+  const body = (await res.json().catch(() => ({}))) as {
+    reply?: string;
+    error?: string;
+  };
+  if (!res.ok) {
+    throw new Error(body.error || `Agent failed (${res.status})`);
+  }
+  return body.reply || "No reply.";
+}

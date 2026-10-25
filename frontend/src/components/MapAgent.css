@@ -1,0 +1,180 @@
+.map-agent {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+
+.map-agent > * {
+  pointer-events: auto;
+}
+
+.map-agent-fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--lime, #d7ff52);
+  color: var(--ink, #0b1016);
+  display: grid;
+  place-items: center;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(215, 255, 82, 0.35);
+  transition:
+    transform 0.18s var(--ease, ease),
+    background 0.18s ease;
+}
+
+.map-agent-fab svg {
+  width: 26px;
+  height: 26px;
+}
+
+.map-agent-fab:hover {
+  transform: scale(1.06);
+  background: var(--lime-hover, #e3ff8a);
+}
+
+.map-agent.is-open .map-agent-fab {
+  background: var(--coral, #ff5148);
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+.map-agent-panel {
+  width: min(360px, calc(100vw - 2rem));
+  height: min(440px, calc(100svh - 7rem));
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius, 16px);
+  border: 1px solid var(--line, #343b47);
+  background: rgba(25, 29, 37, 0.96);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  animation: map-agent-rise 0.28s var(--ease, ease) both;
+}
+
+@keyframes map-agent-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.map-agent-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 0.95rem;
+  border-bottom: 1px solid var(--line, #343b47);
+}
+
+.map-agent-head strong {
+  display: block;
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+}
+
+.map-agent-head span {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  color: var(--muted, #a9afbd);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.map-agent-close {
+  border: none;
+  background: transparent;
+  color: var(--muted, #a9afbd);
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 0.1rem 0.35rem;
+}
+
+.map-agent-close:hover {
+  color: var(--white, #f7f8fa);
+}
+
+.map-agent-messages {
+  flex: 1;
+  overflow: auto;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.map-agent-bubble {
+  max-width: 92%;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.map-agent-bubble--assistant {
+  align-self: flex-start;
+  background: var(--surface-raised, #232934);
+  color: var(--white, #f7f8fa);
+}
+
+.map-agent-bubble--user {
+  align-self: flex-end;
+  background: var(--lime, #d7ff52);
+  color: var(--ink, #0b1016);
+  font-weight: 600;
+}
+
+.map-agent-typing {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.map-agent-error {
+  color: var(--coral-text, #ff817a);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.map-agent-form {
+  display: flex;
+  gap: 0.45rem;
+  padding: 0.7rem;
+  border-top: 1px solid var(--line, #343b47);
+}
+
+.map-agent-form input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line, #343b47);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--ink, #0b1016);
+  color: var(--white, #f7f8fa);
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+}
+
+.map-agent-form input:focus {
+  outline: 2px solid rgba(215, 255, 82, 0.35);
+  outline-offset: 1px;
+}
+
+.map-agent-form .btn {
+  padding: 0.65rem 0.9rem;
+  flex-shrink: 0;
+}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { MapAgent } from "../components/MapAgent";
 import { Timeline } from "../components/Timeline";
 import { publishChart } from "../lib/api";
 import { analyzeVideoFile } from "../pose/analyzeVideo";
@@ -378,15 +379,29 @@ export function Map() {
   return (
     <main className="page map-page">
       <header className="page-head">
-        <h1>Map</h1>
+        <span className="map-kicker">Create · Chart studio</span>
+        <h1>Map a routine</h1>
         <p>
-          Record or import a dance — pose JSON plus a preview video for the chart
-          library.
+          Capture pose samples from your camera or a video, edit the timeline,
+          then publish to the library for Solo and Battle.
         </p>
       </header>
 
+      <ol className="map-steps" aria-label="Map steps">
+        <li>
+          <span>1</span> Capture
+        </li>
+        <li>
+          <span>2</span> Edit timeline
+        </li>
+        <li>
+          <span>3</span> Publish
+        </li>
+      </ol>
+
       <section className="map-editor">
         <div className="map-stage-col">
+          <div className="map-panel map-panel--stage">
           {!stageActive ? (
             <div className="cam-slot tall map-cam-placeholder map-source-pick">
               <button
@@ -416,6 +431,7 @@ export function Map() {
               recording={transport === "recording"}
             />
           )}
+          </div>
 
           <input
             ref={fileInputRef}
@@ -535,8 +551,13 @@ export function Map() {
           />
         </div>
 
-        <aside className="map-side">
-          <h2>Chart draft</h2>
+        <aside className="map-side map-panel">
+          <div>
+            <h2>Chart draft</h2>
+            <p className="map-side-lede">
+              Title it, check length, then ship it to the library.
+            </p>
+          </div>
           <label className="field">
             Song title
             <input
@@ -613,8 +634,8 @@ export function Map() {
           </div>
 
           <p className="hint">
-            Publish sends pose JSON + preview video to the API and stores them in
-            Supabase for Solo Battles.
+            Publish sends pose JSON + preview video to the API for Solo and
+            Battle.
           </p>
 
           {publishError && <p className="api-error">{publishError}</p>}
@@ -636,6 +657,8 @@ export function Map() {
           </button>
         </aside>
       </section>
+
+      <MapAgent />
     </main>
   );
 }

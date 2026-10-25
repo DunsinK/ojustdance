@@ -5,6 +5,7 @@ import { createServer } from "http";
 import { config } from "./src/config.js";
 import { ensureChartsTable } from "./src/db.js";
 import { attachRealtime } from "./src/realtime/index.js";
+import { agentRouter } from "./src/routes/agent.js";
 import { chartsRouter } from "./src/routes/charts.js";
 
 const app = express();
@@ -23,11 +24,13 @@ app.get("/health", (_req, res) => {
     service: "ojustdance-api",
     time: new Date().toISOString(),
     supabaseConfigured: Boolean(config.supabaseUrl && config.databaseUrl),
+    museConfigured: Boolean(config.museApiKey),
     realtime: "socket.io",
   });
 });
 
 app.use("/charts", chartsRouter);
+app.use("/agent", agentRouter);
 
 attachRealtime(httpServer);
 

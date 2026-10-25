@@ -26,4 +26,7 @@ export const config = {
   databaseUrl: normalizeDatabaseUrl(env("SUPABASE_DIRECT_CONNECTION_KEY")),
   storageBucket: env("SUPABASE_CHART_BUCKET", "chart-videos"),
   maxVideoBytes: Math.max(1, maxVideoMb) * 1024 * 1024,
+  museApiKey: env("MUSE_API_KEY"),
+  museModel: env("MUSE_MODEL", "muse-spark-1.3"),
+  museBaseUrl: env("MUSE_BASE_URL", "https://api.meta.ai/v1"),
 };
