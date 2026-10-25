@@ -1,3 +1,4 @@
+import { MediaPipeStyleAdapter } from '@ojustdance/skeleton';
 import { DrawingUtils, type PoseLandmarker } from "@mediapipe/tasks-vision";
 import { useEffect, useRef, useState } from "react";
 import { createPoseLandmarker, PoseLandmarker as PL } from "./createPoseLandmarker";
@@ -5,6 +6,8 @@ import { normalizePose } from "./normalizePose";
 import type { ModelKey, PoseFrame } from "./types";
 
 export type PoseSourceMode = "camera" | "file";
+
+const canonicalAdapter = new MediaPipeStyleAdapter();
 
 type Options = {
   mode: PoseSourceMode;
@@ -28,6 +31,7 @@ export function usePoseSource({
   liveDetect = true,
   onFrame,
 }: Options) {
+  const [canonicalTimelineId] = useState(() => crypto.randomUUID());
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const landmarkerRef = useRef<PoseLandmarker | null>(null);
@@ -182,10 +186,22 @@ export function usePoseSource({
             }
             setFps(frameTimes.length);
 
+            let canonicalFrame;
+            if (raw?.length) {
+              try {
+                canonicalFrame = canonicalAdapter.toFrame({
+                  schemaVersion: "mediapipe-style/1", timestampMs: mode === "file" ? videoEl.currentTime * 1000 : now,
+                  timeline: { origin: mode === "file" ? "video-start" : "session-start", id: canonicalTimelineId },
+                  space: "normalized-image", imageSize: { width: videoEl.videoWidth, height: videoEl.videoHeight },
+                  mirrored: false, depth: "preserve-estimate", landmarks: raw,
+                });
+              } catch { /* Unusable provider observations are excluded from keyframe selection. */ }
+            }
             onFrameRef.current?.({
               t: mode === "file" ? videoEl.currentTime : now / 1000,
               landmarks: pose ? normalizePose(raw) : [],
               hasPose: pose,
+              canonicalFrame,
             });
           }
 
@@ -219,7 +235,7 @@ export function usePoseSource({
       }
       setReady(false);
     };
-  }, [active, mode, fileUrl, model]);
+  }, [active, mode, fileUrl, model, canonicalTimelineId]);
 
   return {
     videoRef,

@@ -1,10 +1,12 @@
-import { LANDMARK_NAMES } from "./landmarks";
+import type { MotionThumbnails } from '../keyframes/contracts.js';
+import { validateMotionThumbnails } from '../keyframes/validation.js';
+import { LANDMARK_NAMES } from "./landmarks.js";
 import type {
   ChartDocument,
   ChartSample,
   ModelKey,
   TimelineSegment,
-} from "./types";
+} from "./types.js";
 
 export function timelineDuration(segments: TimelineSegment[]) {
   if (!segments.length) return 0;
@@ -42,12 +44,15 @@ export function buildChartDocument(opts: {
   difficulty: ChartDocument["difficulty"];
   model: ModelKey;
   sampleRateHz: number;
+  motionThumbnails?: MotionThumbnails;
 }): ChartDocument {
   const samples = flattenSamples(opts.segments);
+  if (opts.motionThumbnails) validateMotionThumbnails(opts.motionThumbnails);
   const durationSec = timelineDuration(opts.segments);
 
   return {
     version: 1,
+    motionThumbnails: opts.motionThumbnails,
     sampleRateHz: opts.sampleRateHz,
     durationSec: Number(durationSec.toFixed(3)),
     title: opts.title || "Untitled chart",

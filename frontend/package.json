@@ -9,8 +9,9 @@
     "lint": "cd .. && frontend/node_modules/.bin/eslint --config frontend/eslint.config.js frontend shared/skeleton/src",
     "preview": "vite preview",
     "build:skeleton": "tsc -p ../shared/skeleton/tsconfig.json",
-    "test": "npm run test:skeleton",
-    "test:skeleton": "npm run build:skeleton && node --test ../shared/skeleton/tests/skeleton.test.mjs"
+    "test": "npm run test:skeleton && npm run test:keyframes",
+    "test:skeleton": "npm run build:skeleton && node --test ../shared/skeleton/tests/skeleton.test.mjs",
+    "test:keyframes": "npm run build:skeleton && tsc -p tsconfig.keyframes.json && node --test tests/keyframes.test.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.1.1",

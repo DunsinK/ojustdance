@@ -7,7 +7,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 import { fileURLToPath } from 'node:url'
 
 export default defineConfig([
-  globalIgnores(['**/dist/**']),
+  globalIgnores(['**/dist/**', '**/.keyframe-tests/**']),
   {
     // One lint invocation covers the app and its sibling shared TypeScript package.
     basePath: fileURLToPath(new URL('..', import.meta.url)),

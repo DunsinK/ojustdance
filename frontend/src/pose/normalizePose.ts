@@ -3,8 +3,8 @@ import {
   LEFT_SHOULDER,
   RIGHT_HIP,
   RIGHT_SHOULDER,
-} from "./landmarks";
-import type { RelativeLandmark } from "./types";
+} from "./landmarks.js";
+import type { RelativeLandmark } from "./types.js";
 
 type Point = { x: number; y: number; z: number; visibility?: number };
 

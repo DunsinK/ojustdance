@@ -84,3 +84,19 @@ loads its source directly and production builds its JavaScript automatically.
 Run `npm test` for its deterministic tests. With `npm run dev`, open
 `/skeleton-debug` for fixtures, joint labels, validity, and explicit transforms.
 Use Node 22.12+ for the existing Vite toolchain.
+
+## Automatic motion thumbnails
+
+Import or record a dance in `/map`: original-video motion thumbnails are selected
+and cached automatically, then scroll through a glowing target during preview
+and `/solo` playback. Background removal and core centering default to on, with
+separate toggles to compare against the original video framing. No Muse or manual
+keyframe editing is needed. See the
+[implementation notes](src/keyframes/README.md) for timing, caching, and limitations.
+Expand **Inspect selected motion frames** in Map to seek individual reference
+poses or export a local analysis for reproducible selector comparisons.
+Cards use one high-quality still each, with centered cutouts at 384 × 432 pixels.
+Targets less than a quarter second apart keep the stronger representative.
+An editor **clip** is a recorded/imported timeline section; thumbnail cues are
+selected from its poses. Missing people and individual mask failures are handled
+per frame/cue, preserving the usable result. See [recovery and review notes](src/keyframes/RECOVERY_AND_REVIEW.md).

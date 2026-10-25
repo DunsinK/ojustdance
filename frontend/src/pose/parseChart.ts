@@ -1,4 +1,6 @@
-import type { ChartDocument, ChartSample } from "./types";
+import { validateMotionThumbnails } from '../keyframes/validation.js';
+import type { MotionThumbnails } from '../keyframes/contracts.js';
+import type { ChartDocument, ChartSample } from "./types.js";
 
 function isSample(value: unknown): value is ChartSample {
   if (!value || typeof value !== "object") return false;
@@ -29,8 +31,11 @@ export function parseChartDocument(raw: unknown): ChartDocument {
       ? record.durationSec
       : samples[samples.length - 1].t;
 
+  if (record.motionThumbnails !== undefined) validateMotionThumbnails(record.motionThumbnails);
+
   return {
     version: 1,
+    motionThumbnails: record.motionThumbnails as MotionThumbnails | undefined,
     sampleRateHz:
       typeof record.sampleRateHz === "number" ? record.sampleRateHz : 15,
     durationSec,

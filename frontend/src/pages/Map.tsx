@@ -1,3 +1,11 @@
+import { ThumbnailAppearanceControls } from '../components/ThumbnailAppearanceControls';
+import { DEFAULT_THUMBNAIL_APPEARANCE } from '../keyframes/contracts';
+import type { ThumbnailAppearance } from '../keyframes/contracts';
+import { MotionThumbnailQueue } from '../components/MotionThumbnailQueue';
+import { MotionThumbnailReview } from '../components/MotionThumbnailReview';
+import { canonicalMotionSamples } from '../keyframes/chartSamples';
+import { prepareMotionThumbnails } from '../keyframes/prepare';
+import type { MotionThumbnails } from '../keyframes/contracts';
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Timeline } from "../components/Timeline";
@@ -51,11 +59,21 @@ export function Map() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzePct, setAnalyzePct] = useState(0);
+  const [analysisNotice, setAnalysisNotice] = useState('');
   const [captureArmed, setCaptureArmed] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishedId, setPublishedId] = useState<string | null>(null);
+  const [thumbnailAppearance, setThumbnailAppearance] = useState<ThumbnailAppearance>({ ...DEFAULT_THUMBNAIL_APPEARANCE });
+  const [motionThumbnails, setMotionThumbnails] = useState<MotionThumbnails | null>(null);
+  const [thumbnailStatus, setThumbnailStatus] = useState('');
+  const [thumbnailError, setThumbnailError] = useState<string | null>(null);
+  const [thumbnailRetry, setThumbnailRetry] = useState(0);
+  const [leadInSec, setLeadInSec] = useState(3);
+  const [mirrorPreview, setMirrorPreview] = useState(false);
+  const thumbnailVideoRef = useRef<HTMLVideoElement | null>(null);
+  const recordedSourceSecRef = useRef(0);
 
   const transportRef = useRef(transport);
   const playheadRef = useRef(playheadSec);
@@ -110,7 +128,9 @@ export function Map() {
             endSec: t,
             samples: [
               ...seg.samples,
-              { t: Number(t.toFixed(4)), landmarks: frame.landmarks },
+              { t: Number(t.toFixed(4)), landmarks: frame.landmarks,
+                sourceTimeSec: recordedSourceSecRef.current + (now - recordStartedAtRef.current) / 1000,
+                canonicalFrame: frame.canonicalFrame },
             ],
           };
         })
@@ -144,6 +164,7 @@ export function Map() {
   }, [transport, mode]);
 
   function setPreview(blob: Blob | null) {
+    setMotionThumbnails(null); setThumbnailError(null); setThumbnailStatus('');
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return blob ? URL.createObjectURL(blob) : null;
@@ -171,6 +192,7 @@ export function Map() {
     setSelectedId(null);
     setPlayheadSec(0);
     setPreview(null);
+    setAnalysisNotice('');
 
     if (fileUrl) URL.revokeObjectURL(fileUrl);
     const url = URL.createObjectURL(file);
@@ -204,16 +226,19 @@ export function Map() {
           canvas: canvasRef.current,
           sampleHz: SAMPLE_HZ,
           signal: ac.signal,
-          onProgress: ({ t, duration }) => {
+          onProgress: ({ t, duration, skippedFrameCount = 0, missingPoseCount = 0 }) => {
             setAnalyzePct(duration ? Math.round((t / duration) * 100) : 0);
+            setAnalysisNotice(skippedFrameCount || missingPoseCount
+              ? `Continued past ${missingPoseCount} frames without a detected person and ${skippedFrameCount} unreadable observations.` : '');
           },
         });
 
         if (ac.signal.aborted) return;
 
-        const endSec = samples.length
-          ? samples[samples.length - 1].t
-          : video.duration || 0;
+        // Empty lead-in/outro stays on the original clock; do not shorten the
+        // recording to the last frame on which a person happened to be tracked.
+        const endSec = Number.isFinite(video.duration) && video.duration > 0
+          ? video.duration : samples.at(-1)?.t ?? 0;
         const id = newId();
         setSegments([
           {
@@ -242,9 +267,32 @@ export function Map() {
     return () => ac.abort();
   }, [mode, analyzing, ready, fileUrl]);
 
+  // Preparation runs automatically after extraction/recording and whenever clips change.
+  // Images retain original source-video times even when the chart timeline closes gaps.
+  useEffect(() => {
+    if (!previewUrl || analyzing || captureArmed || transport === 'recording' || !segments.length) return;
+    const controller = new AbortController();
+    void (async () => {
+      await Promise.resolve();
+      if (controller.signal.aborted) return;
+      setMotionThumbnails(null);
+      setThumbnailError(null);
+      try {
+        const plan = await prepareMotionThumbnails(previewUrl, canonicalMotionSamples(segments), controller.signal,
+          (message) => { if (!controller.signal.aborted) setThumbnailStatus(message); }, thumbnailAppearance);
+        if (!controller.signal.aborted) { setMotionThumbnails(plan); setThumbnailStatus(`${plan.cues.length} motion thumbnails prepared automatically`); }
+      } catch (error) {
+        if (!controller.signal.aborted) { setThumbnailError(error instanceof Error ? error.message : 'Thumbnail preparation failed'); setThumbnailStatus(''); }
+      }
+    })();
+    return () => controller.abort();
+  }, [previewUrl, segments, analyzing, captureArmed, transport, thumbnailRetry, thumbnailAppearance]);
+
   async function startRecording() {
     if (mode !== "camera" || !ready) return;
 
+    setMotionThumbnails(null);
+    if (!sessionRecorderRef.current) recordedSourceSecRef.current = 0;
     const startAt = playheadRef.current;
     const id = newId();
     activeSegIdRef.current = id;
@@ -278,12 +326,14 @@ export function Map() {
   }
 
   function pauseRecording() {
+    if (transport === "recording") recordedSourceSecRef.current += (performance.now() - recordStartedAtRef.current) / 1000;
     setTransport("paused");
     activeSegIdRef.current = null;
     sessionRecorderRef.current?.pause();
   }
 
   async function stopSession() {
+    if (transport === "recording") recordedSourceSecRef.current += (performance.now() - recordStartedAtRef.current) / 1000;
     setTransport("idle");
     activeSegIdRef.current = null;
     const recorder = sessionRecorderRef.current;
@@ -300,12 +350,14 @@ export function Map() {
   }
 
   function deleteSelected() {
+    setMotionThumbnails(null);
     if (!selectedId || transport === "recording") return;
     setSegments((prev) => prev.filter((s) => s.id !== selectedId));
     setSelectedId(null);
   }
 
   function handleCloseGaps() {
+    setMotionThumbnails(null);
     if (transport === "recording") return;
     setSegments((prev) => closeGaps(prev));
     setPlayheadSec(0);
@@ -313,6 +365,7 @@ export function Map() {
   }
 
   function clearAll() {
+    setMotionThumbnails(null); setThumbnailStatus('');
     if (transport === "recording") return;
     setSegments([]);
     setSelectedId(null);
@@ -328,6 +381,10 @@ export function Map() {
       return;
     }
 
+    if (!motionThumbnails) {
+      setPublishError("Wait for automatic motion thumbnail preparation to finish.");
+      return;
+    }
     setPublishing(true);
     setPublishError(null);
     setPublishMessage(null);
@@ -340,6 +397,7 @@ export function Map() {
         difficulty,
         model,
         sampleRateHz: SAMPLE_HZ,
+        motionThumbnails,
       });
       const result = await publishChart({
         chart: doc,
@@ -596,9 +654,13 @@ export function Map() {
 
           <div className="preview-block">
             <h3>Preview video</h3>
+            {previewUrl && <label className="live-mirror-toggle"><input type="checkbox" checked={mirrorPreview}
+              onChange={(event) => setMirrorPreview(event.target.checked)} /> Mirror preview and thumbnails</label>}
             {previewUrl ? (
               <video
+                ref={thumbnailVideoRef}
                 className="preview-video"
+                style={{ transform: mirrorPreview ? 'scaleX(-1)' : undefined }}
                 src={previewUrl}
                 controls
                 playsInline
@@ -611,6 +673,13 @@ export function Map() {
               </p>
             )}
           </div>
+
+          {thumbnailStatus && <p className="motion-thumbnail-status" role="status">{thumbnailStatus}</p>}
+          {analysisNotice && <p className="motion-thumbnail-status" role="status">{analysisNotice}</p>}
+          {thumbnailError && <div role="alert"><p className="api-error">{thumbnailError}</p>
+            <button type="button" className="btn ghost" onClick={() => setThumbnailRetry((value) => value + 1)}>Retry thumbnail preparation</button>
+          </div>}
+
 
           <p className="hint">
             Publish sends pose JSON + preview video to the API and stores them in
@@ -629,13 +698,24 @@ export function Map() {
           <button
             type="button"
             className="btn primary"
-            disabled={!sampleCount || publishing}
+            disabled={!sampleCount || publishing || !motionThumbnails || analyzing || captureArmed}
             onClick={() => void publishAll()}
           >
             {publishing ? "Publishing…" : "Publish to library"}
           </button>
         </aside>
       </section>
+      {previewUrl && <ThumbnailAppearanceControls appearance={thumbnailAppearance} onChange={(appearance) => {
+        setMotionThumbnails(null); setThumbnailAppearance(appearance);
+      }} />}
+      {motionThumbnails && <>
+        <MotionThumbnailQueue track={motionThumbnails} mediaRef={thumbnailVideoRef} mirrored={mirrorPreview} leadInSec={leadInSec} onRetry={() => setThumbnailRetry((value) => value + 1)} />
+        <div className="motion-thumbnail-controls"><label>Preview lead-in
+          <input type="range" min="1.5" max="6" step="0.5" value={leadInSec} onChange={(event) => setLeadInSec(Number(event.target.value))} />
+          {leadInSec.toFixed(1)}s
+        </label></div>
+        <MotionThumbnailReview track={motionThumbnails} samples={canonicalMotionSamples(segments)} mediaRef={thumbnailVideoRef} mirrored={mirrorPreview} />
+      </>}
     </main>
   );
 }

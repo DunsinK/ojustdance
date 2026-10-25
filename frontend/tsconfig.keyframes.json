@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": [
+      "ES2023",
+      "DOM"
+    ],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": [],
+    "strict": true,
+    "skipLibCheck": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "verbatimModuleSyntax": true,
+    "rootDir": "src",
+    "outDir": ".keyframe-tests"
+  },
+  "include": [
+    "src/keyframes/contracts.ts",
+    "src/keyframes/selectKeyframes.ts",
+    "src/keyframes/selectionReview.ts",
+    "src/keyframes/visualReview.ts",
+    "src/keyframes/validation.ts",
+    "src/keyframes/timing.ts",
+    "src/keyframes/chartSamples.ts",
+    "src/pose/exportChart.ts",
+    "src/pose/parseChart.ts",
+    "src/pose/analyzeVideo.ts",
+    "src/keyframes/observationFraming.ts",
+    "src/keyframes/media.ts",
+    "src/keyframes/thumbnailAssets.ts",
+    "src/keyframes/personMatte.ts"
+  ]
+}

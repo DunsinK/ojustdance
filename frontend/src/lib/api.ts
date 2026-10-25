@@ -76,7 +76,9 @@ export async function publishChart(opts: {
   videoFilename?: string;
 }): Promise<PublishChartResult> {
   const form = new FormData();
-  form.append("chart", JSON.stringify(opts.chart));
+  // Send JSON as the already-supported chart file, avoiding multipart text-field limits
+  // when durable thumbnail JPEGs are embedded in the chart.
+  form.append("chart", new Blob([JSON.stringify(opts.chart)], { type: "application/json" }), "chart.json");
   if (opts.title) form.append("title", opts.title);
   if (opts.difficulty) form.append("difficulty", opts.difficulty);
   if (opts.video) {

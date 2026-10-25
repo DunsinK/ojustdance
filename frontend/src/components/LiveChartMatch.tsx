@@ -1,3 +1,8 @@
+import { ThumbnailAppearanceControls } from './ThumbnailAppearanceControls';
+import { DEFAULT_THUMBNAIL_APPEARANCE } from '../keyframes/contracts';
+import type { ThumbnailAppearance } from '../keyframes/contracts';
+import { MotionThumbnailQueue } from './MotionThumbnailQueue';
+import { useSavedChartThumbnails } from '../keyframes/useSavedChartThumbnails';
 import { useEffect, useRef, useState } from "react";
 import {
   applyScoreTick,
@@ -43,6 +48,9 @@ export function LiveChartMatch({
   onComplete,
 }: Props) {
   const refVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [thumbnailAppearance, setThumbnailAppearance] = useState<ThumbnailAppearance>({ ...DEFAULT_THUMBNAIL_APPEARANCE });
+  const thumbnails = useSavedChartThumbnails(chart, videoUrl, thumbnailAppearance);
+  const [leadInSec, setLeadInSec] = useState(3);
   const [playing, setPlaying] = useState(false);
   const [finished, setFinished] = useState(false);
   const [chartTime, setChartTime] = useState(0);
@@ -279,6 +287,19 @@ export function LiveChartMatch({
         </div>
       </div>
 
+      {videoUrl && <ThumbnailAppearanceControls appearance={thumbnailAppearance} onChange={setThumbnailAppearance} />}
+      {thumbnails.loading && <p className="motion-thumbnail-status" role="status">{thumbnails.message}</p>}
+      {thumbnails.error && <div role="alert"><p className="api-error">Motion thumbnails: {thumbnails.error}</p>
+        {videoUrl && <button type="button" className="btn ghost" onClick={thumbnails.retry}>Retry thumbnails</button>}
+      </div>}
+      {thumbnails.plan && <>
+        <MotionThumbnailQueue track={thumbnails.plan} mediaRef={refVideoRef} mirrored={mirrorChart} leadInSec={leadInSec} onRetry={thumbnails.retry} />
+        <div className="motion-thumbnail-controls"><label>Preview lead-in
+          <input type="range" min="1.5" max="6" step="0.5" value={leadInSec} onChange={(event) => setLeadInSec(Number(event.target.value))} />
+          {leadInSec.toFixed(1)}s
+        </label></div>
+      </>}
+
       <div className="live-meter" aria-hidden="true">
         <div
           className={`live-meter-fill ${meterClass}`}
@@ -301,7 +322,7 @@ export function LiveChartMatch({
           <button
             type="button"
             className="btn primary"
-            disabled={!ready}
+            disabled={!ready || thumbnails.loading}
             onClick={() => void start()}
           >
             Start

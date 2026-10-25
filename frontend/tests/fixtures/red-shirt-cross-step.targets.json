@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "keyframe-visual-targets/1",
+  "id": "red-shirt-cross-step",
+  "method": "Visual inspection of source frames at 6 Hz, recorded before inspecting selector output. Windows describe useful held/apex poses, not precise choreographic boundaries.",
+  "exclude": [{ "startTimeSec": 0, "endTimeSec": 0.45, "reason": "Desktop overlay obscures the dancer" }],
+  "targets": [
+    { "id": "cross-1", "startTimeSec": 3.00, "endTimeSec": 3.75, "note": "First clear crossed-foot pose" },
+    { "id": "wide-1", "startTimeSec": 4.15, "endTimeSec": 4.85, "note": "First wide-foot landing" },
+    { "id": "cross-2", "startTimeSec": 5.20, "endTimeSec": 5.85, "note": "Opposite crossed-foot pose" },
+    { "id": "wide-2", "startTimeSec": 6.25, "endTimeSec": 6.95, "note": "Wide-foot landing before arms join" },
+    { "id": "arm-cross-1", "startTimeSec": 7.30, "endTimeSec": 8.15, "note": "Crossed legs with forearm across the chest" },
+    { "id": "arm-release-1", "startTimeSec": 8.65, "endTimeSec": 9.25, "note": "Arm release into wide stance" },
+    { "id": "arm-cross-2", "startTimeSec": 9.65, "endTimeSec": 10.50, "note": "Opposite arm cross and crossed legs" },
+    { "id": "arm-release-2", "startTimeSec": 10.85, "endTimeSec": 11.35, "note": "Second wide stance with arms released" },
+    { "id": "faster-cross", "startTimeSec": 11.58, "endTimeSec": 11.88, "note": "Crossed feet during faster repetition" },
+    { "id": "faster-wide", "startTimeSec": 11.98, "endTimeSec": 12.23, "note": "Wide-foot landing during faster repetition" }
+  ]
+}
