@@ -2,12 +2,238 @@
   padding-bottom: 3rem;
 }
 
+.dances-page--feed {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding: 0;
+  max-width: none;
+  height: calc(100svh - 5.5rem);
+  min-height: 28rem;
+  overflow: hidden;
+  background: #05070c;
+}
+
+.dances-snap {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+}
+
+.dances-snap::-webkit-scrollbar {
+  display: none;
+}
+
+.dances-slide {
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Shorts stage: vertical player centered, rail on its right. */
+.dances-slide-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  height: 100%;
+  max-height: 100%;
+  padding: 0.65rem 0.75rem;
+  box-sizing: border-box;
+}
+
+.dances-player {
+  --shorts-max-w: min(420px, calc(100vw - 6.5rem));
+  position: relative;
+  /* Tall as the stage, but capped so width stays Shorts-sized on desktop. */
+  aspect-ratio: 9 / 16;
+  height: min(100%, 860px, calc(var(--shorts-max-w) * 16 / 9));
+  width: auto;
+  max-width: var(--shorts-max-w);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.55);
+  flex-shrink: 0;
+}
+
+.dances-slide-media {
+  position: absolute;
+  inset: 0;
+  background: #0a0d12;
+}
+
+.dances-slide-media video,
+.dances-slide-placeholder {
+  width: 100%;
+  height: 100%;
+  /* contain keeps landscape clips fully visible inside the vertical frame */
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  background: #000;
+  transform: scale(1.01);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dances-slide.is-active .dances-slide-media video {
+  transform: scale(1);
+}
+
+.dances-slide-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--muted, #a9afbd);
+  font-size: 0.95rem;
+  object-fit: unset;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(215, 255, 82, 0.14), transparent 45%),
+    #12161e;
+}
+
+.dances-slide-wash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 7, 12, 0.28) 0%,
+    transparent 32%,
+    transparent 52%,
+    rgba(5, 7, 12, 0.78) 82%,
+    rgba(5, 7, 12, 0.94) 100%
+  );
+  pointer-events: none;
+}
+
+.dances-slide-meta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  padding: 1.1rem 1rem 1.15rem;
+  animation: dances-meta-in 0.45s ease both;
+}
+
+.dances-slide.is-active .dances-slide-meta {
+  animation: dances-meta-in 0.45s ease both;
+}
+
+.dances-slide-kicker {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--lime, #d7ff52);
+}
+
+.dances-slide-meta h2 {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(1.25rem, 2.8vw, 1.7rem);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  text-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+}
+
+.dances-slide-meta p {
+  margin: 0 0 0.75rem;
+  color: rgba(247, 248, 250, 0.78);
+  font-size: 0.84rem;
+}
+
+.dances-slide-cta {
+  min-width: 8.5rem;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.88rem;
+}
+
+.dances-feed-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  flex-shrink: 0;
+  animation: dances-rail-in 0.55s 0.12s ease both;
+}
+
+.dances-rail-btn {
+  display: grid;
+  justify-items: center;
+  gap: 0.28rem;
+  min-width: 4.25rem;
+  padding: 0.7rem 0.55rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(12, 15, 22, 0.72);
+  backdrop-filter: blur(12px);
+  color: var(--white, #f7f8fa);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.dances-rail-btn svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.dances-rail-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(215, 255, 82, 0.55);
+  color: var(--lime, #d7ff52);
+  background: rgba(12, 15, 22, 0.88);
+}
+
+.dances-rail-btn--ghost {
+  background: rgba(12, 15, 22, 0.45);
+}
+
+.dances-status--feed,
+.dances-empty--feed {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.85rem;
+  margin: 0;
+  background: #05070c;
+}
+
+/* —— Library grid —— */
+
 .dances-head {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.1rem;
+}
+
+.dances-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  flex-shrink: 0;
 }
 
 .dances-kicker {
@@ -77,15 +303,13 @@
   color: var(--muted, #a9afbd);
 }
 
-.dances-feed {
+.dances-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 0.85rem;
 }
 
 .dance-card {
-  display: flex;
-  flex-direction: column;
   border-radius: 18px;
   overflow: hidden;
   border: 1px solid var(--line, #343b47);
@@ -96,6 +320,19 @@
 
 .dance-card:hover {
   transform: translateY(-3px);
+}
+
+.dance-card-hit {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .dance-card-media {
@@ -123,21 +360,6 @@
     #151a22;
 }
 
-.dance-card-diff {
-  position: absolute;
-  top: 0.65rem;
-  left: 0.65rem;
-  padding: 0.28rem 0.55rem;
-  border-radius: 999px;
-  background: rgba(11, 16, 22, 0.72);
-  backdrop-filter: blur(8px);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--lime, #d7ff52);
-}
-
 .dance-card-body {
   display: flex;
   flex-direction: column;
@@ -162,13 +384,6 @@
   color: var(--muted, #a9afbd);
 }
 
-.dance-card-cta {
-  margin-top: 0.45rem;
-  width: 100%;
-  padding: 0.65rem 0.75rem;
-  font-size: 0.86rem;
-}
-
 .sr-only {
   position: absolute;
   width: 1px;
@@ -181,13 +396,55 @@
   border: 0;
 }
 
+@keyframes dances-meta-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dances-rail-in {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @media (max-width: 640px) {
+  .dances-page--feed {
+    height: calc(100svh - 8.5rem);
+  }
+
+  .dances-slide-row {
+    gap: 0.45rem;
+    padding: 0.4rem 0.45rem;
+  }
+
+  .dances-player {
+    max-width: min(100%, calc(100vw - 5.25rem));
+    border-radius: 12px;
+  }
+
+  .dances-rail-btn {
+    min-width: 3.6rem;
+    padding: 0.55rem 0.4rem 0.5rem;
+    font-size: 0.6rem;
+  }
+
   .dances-head {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .dances-feed {
+  .dances-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.65rem;
   }
