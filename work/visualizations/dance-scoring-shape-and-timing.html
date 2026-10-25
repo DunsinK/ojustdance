@@ -1,0 +1,131 @@
+<div id="dance-score-shape-time">
+  <h3>Same movement, different timing</h3>
+  <div class="text-small text-muted">Synthetic example · one elbow angle · known timing shift</div>
+  <div class="viz-controls">
+    <label class="form-label">Player timing: <output id="dance-delay-value" class="tabular-nums">150 ms late</output>
+      <input id="dance-delay" class="form-range" type="range" min="-400" max="400" step="25" value="150" aria-label="Player timing offset in milliseconds">
+    </label>
+    <label class="form-label">Movement amplitude: <output id="dance-amplitude-value" class="tabular-nums">100%</output>
+      <input id="dance-amplitude" class="form-range" type="range" min="50" max="130" step="5" value="100" aria-label="Player movement amplitude percent">
+    </label>
+  </div>
+  <div class="viz-row dance-series">
+    <button type="button" class="cursor-interaction" data-series="reference" aria-pressed="true"><span class="dance-swatch dance-reference"></span>Reference</button>
+    <button type="button" class="cursor-interaction" data-series="player" aria-pressed="true"><span class="dance-swatch dance-player"></span>Player</button>
+  </div>
+  <div class="dance-plot">
+    <svg role="img" aria-label="Synthetic reference and player elbow angles over song time. Timing shifts the player curve sideways; amplitude changes its shape."></svg>
+    <div class="tooltip dance-tooltip" role="tooltip" hidden></div>
+  </div>
+  <div class="viz-grid" aria-live="polite">
+    <div class="card viz-stat"><div>Same-time mean error</div><div id="dance-same-error" class="viz-stat-value tabular-nums"></div></div>
+    <div class="card viz-stat"><div>Shape error after known shift</div><div id="dance-shape-error" class="viz-stat-value tabular-nums"></div></div>
+  </div>
+</div>
+<style>
+  #dance-score-shape-time h3 { margin-inline-end: 100px; }
+  #dance-score-shape-time .dance-plot { position: relative; }
+  #dance-score-shape-time .dance-plot svg { display: block; width: 100%; height: 270px; overflow: visible; }
+  #dance-score-shape-time .dance-plot svg text { fill: var(--foreground); font-size: 12px; }
+  #dance-score-shape-time .dance-series button { display: inline-flex; align-items: center; gap: 8px; border: 0; background: transparent; color: var(--foreground); padding: 6px 0; font: inherit; }
+  #dance-score-shape-time .dance-swatch { display: inline-block; width: 24px; height: 0; border-top: 3px solid; }
+  #dance-score-shape-time .dance-reference { border-color: var(--viz-series-1); }
+  #dance-score-shape-time .dance-player { border-color: var(--viz-series-2); border-top-style: dashed; }
+  #dance-score-shape-time .dance-tooltip { position: absolute; pointer-events: none; background: var(--popover); color: var(--popover-foreground); padding: 8px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script>
+(() => {
+  const root = document.getElementById('dance-score-shape-time');
+  const delay = root.querySelector('#dance-delay');
+  const amplitude = root.querySelector('#dance-amplitude');
+  const plot = root.querySelector('.dance-plot');
+  const svg = d3.select(plot.querySelector('svg'));
+  const tooltip = plot.querySelector('.dance-tooltip');
+  const visible = { reference: true, player: true };
+  let pinned = false;
+  const reference = time => time < 0.5 || time > 2 ? 45 : 45 + 100 * Math.sin(Math.PI * (time - 0.5) / 1.5) ** 2;
+  const player = time => 45 + Number(amplitude.value) / 100 * (reference(time - Number(delay.value) / 1000) - 45);
+  const samples = Array.from({ length: 181 }, (_, index) => index / 60);
+  let hasDrawn = false;
+  function restore(state) {
+    const value = state && state.modelContent;
+    if (value && Number.isFinite(value.delayMs) && Number.isFinite(value.amplitudePercent)) {
+      delay.value = Math.min(400, Math.max(-400, value.delayMs));
+      amplitude.value = Math.min(130, Math.max(50, value.amplitudePercent));
+    }
+  }
+  restore(window.openai && window.openai.widgetState);
+  function draw() {
+    const width = Math.max(280, plot.clientWidth), height = 270;
+    const margin = { left: 64, right: 18, top: 18, bottom: 45 };
+    const series = [
+      { key: 'reference', color: 'var(--viz-series-1)', values: samples.map(time => ({ time, value: reference(time) })) },
+      { key: 'player', color: 'var(--viz-series-2)', values: samples.map(time => ({ time, value: player(time) })) }
+    ];
+    const all = series.flatMap(line => line.values);
+    const domain = d3.extent(all, point => point.value);
+    const padding = Math.max(8, (domain[1] - domain[0]) * 0.1);
+    const x = d3.scaleLinear().domain(d3.extent(all, point => point.time)).range([margin.left + 4, width - margin.right - 4]);
+    const y = d3.scaleLinear().domain([domain[0] - padding, domain[1] + padding]).nice().range([height - margin.bottom - 4, margin.top + 4]);
+    svg.attr('viewBox', '0 0 ' + width + ' ' + height);
+    svg.selectAll('rect[data-chart-frame]').data([null]).join('rect').attr('data-chart-frame', '')
+      .attr('x', margin.left).attr('y', margin.top).attr('width', width - margin.left - margin.right).attr('height', height - margin.top - margin.bottom)
+      .attr('fill', 'none').attr('stroke', 'var(--border)');
+    svg.selectAll('g.dance-x').data([null]).join('g').attr('class', 'dance-x').attr('transform', 'translate(0,' + (height - margin.bottom) + ')')
+      .call(d3.axisBottom(x).ticks(width < 400 ? 3 : 6).tickSizeOuter(0));
+    svg.selectAll('g.dance-y').data([null]).join('g').attr('class', 'dance-y').attr('transform', 'translate(' + margin.left + ',0)')
+      .call(d3.axisLeft(y).ticks(4).tickSizeOuter(0));
+    svg.selectAll('.domain,.tick line').attr('stroke', 'var(--border)');
+    svg.selectAll('text.dance-x-title').data([null]).join('text').attr('class', 'dance-x-title axis-title').attr('data-axis', 'x')
+      .attr('x', (margin.left + width - margin.right) / 2).attr('y', height - 4).attr('text-anchor', 'middle').text('Song time (s)');
+    svg.selectAll('text.dance-y-title').data([null]).join('text').attr('class', 'dance-y-title axis-title').attr('data-axis', 'y')
+      .attr('transform', 'rotate(-90)').attr('x', -(margin.top + height - margin.bottom) / 2).attr('y', 15).attr('text-anchor', 'middle').text('Elbow angle (°)');
+    const line = d3.line().x(point => x(point.time)).y(point => y(point.value));
+    const paths = svg.selectAll('path.dance-line').data(series, item => item.key).join('path').attr('class', 'dance-line')
+      .attr('fill', 'none').attr('stroke-width', 2.5).attr('stroke', item => item.color)
+      .attr('stroke-dasharray', item => item.key === 'player' ? '7 5' : null).attr('display', item => visible[item.key] ? null : 'none');
+    if (hasDrawn && !matchMedia('(prefers-reduced-motion: reduce)').matches) paths.transition().duration(120).attr('d', item => line(item.values));
+    else paths.attr('d', item => line(item.values));
+    const guide = svg.selectAll('line.dance-guide').data([null]).join('line').attr('class', 'dance-guide').attr('data-chart-hover-guide', '')
+      .attr('y1', margin.top).attr('y2', height - margin.bottom).attr('stroke', 'var(--border)').attr('visibility', 'hidden');
+    const markers = svg.selectAll('circle.dance-marker').data(series, item => item.key).join('circle').attr('class', 'dance-marker')
+      .attr('data-chart-hover-marker', '').attr('r', 4).attr('fill', item => item.color).attr('visibility', 'hidden');
+    const overlay = svg.selectAll('rect.dance-hit').data([null]).join('rect').attr('class', 'dance-hit').attr('data-chart-hit', '')
+      .attr('data-chart-hover-overlay', 'cross-series').attr('x', margin.left).attr('y', margin.top)
+      .attr('width', width - margin.left - margin.right).attr('height', height - margin.top - margin.bottom).attr('fill', 'transparent');
+    function hover(event) {
+      const position = Math.min(x.range()[1], Math.max(x.range()[0], d3.pointer(event, svg.node())[0]));
+      const time = x.invert(position);
+      guide.attr('x1', position).attr('x2', position).attr('visibility', 'visible');
+      markers.attr('cx', position).attr('cy', item => y(item.key === 'reference' ? reference(time) : player(time)))
+        .attr('visibility', item => visible[item.key] ? 'visible' : 'hidden');
+      tooltip.textContent = time.toFixed(2) + ' s' + (visible.reference ? ' · Reference ' + reference(time).toFixed(1) + '°' : '') + (visible.player ? ' · Player ' + player(time).toFixed(1) + '°' : '');
+      tooltip.hidden = false;
+      tooltip.style.left = Math.max(0, Math.min(width - tooltip.offsetWidth, position + 10)) + 'px';
+      tooltip.style.top = '0px';
+    }
+    overlay.on('pointermove', event => { if (!pinned) hover(event); }).on('pointerdown', event => { pinned = !pinned; hover(event); })
+      .on('pointerleave', () => { if (!pinned) { tooltip.hidden = true; guide.attr('visibility', 'hidden'); markers.attr('visibility', 'hidden'); } });
+    const same = d3.mean(samples, time => Math.abs(player(time) - reference(time)));
+    const aligned = d3.mean(samples, time => Math.abs(player(time + Number(delay.value) / 1000) - reference(time)));
+    root.querySelector('#dance-delay-value').textContent = Math.abs(Number(delay.value)) + ' ms ' + (Number(delay.value) < 0 ? 'early' : Number(delay.value) > 0 ? 'late' : 'on time');
+    root.querySelector('#dance-amplitude-value').textContent = amplitude.value + '%';
+    root.querySelector('#dance-same-error').textContent = same.toFixed(1) + '°';
+    root.querySelector('#dance-shape-error').textContent = aligned.toFixed(1) + '°';
+    hasDrawn = true;
+  }
+  function save() {
+    if (window.openai && typeof window.openai.setWidgetState === 'function') window.openai.setWidgetState({ modelContent: { delayMs: Number(delay.value), amplitudePercent: Number(amplitude.value) }, privateContent: null }).catch(() => {});
+  }
+  [delay, amplitude].forEach(input => input.addEventListener('input', () => { draw(); save(); }));
+  root.querySelectorAll('[data-series]').forEach(button => button.addEventListener('click', () => {
+    visible[button.dataset.series] = !visible[button.dataset.series];
+    button.setAttribute('aria-pressed', String(visible[button.dataset.series]));
+    draw();
+  }));
+  window.addEventListener('openai:set_globals', event => { if (event.detail && event.detail.globals && event.detail.globals.widgetState) { restore(event.detail.globals.widgetState); draw(); } });
+  new ResizeObserver(draw).observe(plot);
+  draw();
+})();
+</script>

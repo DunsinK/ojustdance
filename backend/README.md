@@ -4,7 +4,7 @@ Matchmaking, WebSocket rooms, and match settle will live here. Right now it’s 
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 22.12+ (the installed Supabase client requires native WebSocket support)
 
 ## Setup (once)
 
@@ -41,6 +41,12 @@ npm run dev        # nodemon server.js
 ```
 
 API: **http://localhost:3001**
+
+If the system default is still Node 20, run the API with Node 22 explicitly:
+
+```bash
+npm exec --yes --package=node@22 -- node server.js
+```
 
 Health check:
 
@@ -80,6 +86,14 @@ SUPABASE_DIRECT_CONNECTION_KEY=postgresql://postgres:PASSWORD@db....supabase.co:
 4. Confirm under **Table Editor** that `charts` exists  
 
 (Optional) If direct Postgres works, the API also tries to create the table on boot.
+Set `SKIP_DB_INIT=1` in `backend/.env` to use an existing table without running
+database schema changes on startup.
+Use `HOST=127.0.0.1` for local development to listen only on this machine.
+
+`FRONTEND_ORIGIN` accepts a comma-separated list of exact frontend origins;
+trailing slashes are removed. If Vite chooses another port, add it explicitly,
+for example `http://localhost:5173,http://localhost:5175`. `localhost` and
+`127.0.0.1` are distinct browser origins.
 
 ### Storage / upload size
 
