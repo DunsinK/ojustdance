@@ -1,22 +1,10 @@
+/* Functional-page utilities on top of festival tokens (styles/tokens.css). */
 :root {
-  --ink: #0c1018;
-  --ink-soft: #2a3344;
-  --paper: #eef1eb;
-  --paper-2: #e2e7df;
-  --acid: #c8f542;
-  --signal: #ff4d2e;
-  --line: rgba(12, 16, 24, 0.12);
-  --muted: #5c6778;
-
-  --font-display: "Syne", sans-serif;
-  --font-body: "Figtree", sans-serif;
-
-  color: var(--ink);
-  background: var(--paper);
-  font-family: var(--font-body);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
+  --acid: var(--lime, #d7ff52);
+  --signal: var(--coral, #ff5148);
+  --ink-soft: var(--muted, #a9afbd);
+  --paper: var(--ink, #0b1016);
+  --font-body: var(--font, "Space Grotesk", sans-serif);
 }
 
 *,
@@ -34,18 +22,6 @@ body,
 body {
   margin: 0;
   min-height: 100svh;
-  background:
-    linear-gradient(115deg, transparent 0 46%, rgba(200, 245, 66, 0.08) 46% 54%, transparent 54%),
-    repeating-linear-gradient(
-      -18deg,
-      transparent,
-      transparent 28px,
-      rgba(12, 16, 24, 0.035) 28px,
-      rgba(12, 16, 24, 0.035) 29px
-    ),
-    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(255, 77, 46, 0.12), transparent 55%),
-    radial-gradient(ellipse 70% 45% at 100% 0%, rgba(200, 245, 66, 0.18), transparent 50%),
-    var(--paper);
 }
 
 a {
@@ -62,7 +38,7 @@ h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.04em;
   margin: 0;
 }
@@ -86,30 +62,18 @@ p {
   }
 }
 
-@keyframes floor-shift {
-  from {
-    background-position: 0 0, 0 0, 0 0, 0 0, 0 0;
-  }
-  to {
-    background-position: 40px 0, 18px 0, 0 0, 0 0, 0 0;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  body {
-    animation: floor-shift 18s linear infinite;
-  }
-}
-
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0.85rem 1.25rem;
-  border-radius: 6px;
+  border-radius: var(--radius-sm, 8px);
   font-weight: 700;
   border: 2px solid transparent;
-  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .btn:hover {
@@ -117,26 +81,26 @@ p {
 }
 
 .btn.primary {
-  background: var(--ink);
-  color: var(--acid);
+  background: var(--lime, #d7ff52);
+  color: #0b1016;
 }
 
 .btn.primary:hover {
-  background: #1a2230;
+  background: var(--lime-hover, #e3ff8a);
 }
 
 .btn.ghost {
   background: transparent;
-  border-color: var(--ink);
-  color: var(--ink);
+  border-color: var(--control-line, #737d8f);
+  color: var(--white, #f7f8fa);
 }
 
 .btn.ghost:hover {
-  background: rgba(12, 16, 24, 0.05);
+  background: rgba(247, 248, 250, 0.06);
 }
 
 .btn.danger {
-  background: var(--signal);
+  background: var(--coral, #ff5148);
   color: #fff;
 }
 

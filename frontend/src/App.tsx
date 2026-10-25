@@ -13,8 +13,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="skeleton-debug" element={<SkeletonDebug />} />
+        <Route index element={<Home />} />
         <Route element={<Layout />}>
-          <Route index element={<Home />} />
           <Route path="battle" element={<Battle />} />
           <Route path="solo" element={<SoloBattles />} />
           <Route path="map" element={<Map />} />

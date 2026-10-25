@@ -1,36 +1,48 @@
-import { Link } from "react-router-dom";
+import { useReducedMotion } from "motion/react";
+import { Link, useNavigate } from "react-router-dom";
+import { Brand } from "../components/Brand";
+import { Landing } from "../screens/Landing";
+import { ReducedMotionContext } from "../ui/Motion";
 import "./Home.css";
 
 export function Home() {
-  return (
-    <main className="home">
-      <div className="home-copy">
-        <p className="brand">ojustdance</p>
-        <h1>Dance strangers. Score live.</h1>
-        <p className="lede">
-          Random 1v1 battles on community-mapped charts — graded on your camera,
-          settled on the wire.
-        </p>
-        <div className="cta-row">
-          <Link to="/battle" className="btn primary">
-            Find a battle
-          </Link>
-          <Link to="/solo" className="btn ghost">
-            Solo battles
-          </Link>
-          <Link to="/map" className="btn ghost">
-            Map a chart
-          </Link>
-        </div>
-      </div>
+  const navigate = useNavigate();
+  const quiet = !!useReducedMotion();
 
-      <div className="home-visual" aria-hidden="true">
-        <div className="stage-plane">
-          <span className="lane lane-a" />
-          <span className="lane lane-b" />
-          <span className="vs">VS</span>
-        </div>
+  return (
+    <ReducedMotionContext.Provider value={quiet}>
+      <div className={`festival-home${quiet ? " motion-reduced" : ""}`}>
+        <header className="festival-home-bar">
+          <Link to="/" className="festival-home-brand" aria-label="ojustdance home">
+            <Brand />
+          </Link>
+          <nav className="festival-home-nav" aria-label="Primary">
+            <Link to="/battle">Battle</Link>
+            <Link to="/solo">Solo</Link>
+            <Link to="/map">Map</Link>
+            <Link to="/charts">Charts</Link>
+          </nav>
+        </header>
+
+        <Landing
+          onFind={() => navigate("/battle")}
+          secondary={
+            <div className="festival-secondary-ctas">
+              <Link to="/solo" className="btn ghost">
+                Solo practice
+              </Link>
+              <Link to="/map" className="btn ghost">
+                Map a chart
+              </Link>
+            </div>
+          }
+        />
+
+        <footer className="festival-home-foot">
+          <span>NO SMALL TALK. JUST DANCE.</span>
+          <span>ojustdance / HACKTX 2026</span>
+        </footer>
       </div>
-    </main>
+    </ReducedMotionContext.Provider>
   );
 }

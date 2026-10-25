@@ -1,0 +1,628 @@
+/* Phase 1: branded, native-scroll storytelling. Uses the shared palette and type. */
+.festival-landing {
+  --scene-space: clamp(24px, 5vw, 80px);
+}
+.festival-intro {
+  position: relative;
+  min-height: calc(100svh - 100px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px var(--gutter) 76px;
+  overflow: hidden;
+}
+.festival-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+}
+.festival-brand {
+  padding: 40px 0 24px;
+}
+.festival-edition {
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  color: var(--coral-text);
+}
+.festival-wordmark {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1650/390;
+  margin: 20px 0;
+}
+.festival-intro-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 32px;
+  padding-bottom: 32px;
+}
+.festival-intro h1 {
+  font-size: clamp(40px, 5.3vw, 82px);
+  line-height: 0.98;
+  letter-spacing: -0.06em;
+}
+.festival-intro h1 span {
+  color: var(--lime);
+}
+.festival-intro-bottom p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+.festival-intro-bottom a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 48px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--control-line);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.festival-intro-bottom a span {
+  font-size: 28px;
+  color: var(--lime);
+}
+.festival-ticket {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  gap: 24px;
+  padding: 14px 20px;
+  background: var(--lime);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.festival-persistent {
+  position: fixed;
+  bottom: 24px;
+  right: var(--gutter);
+  z-index: 15;
+}
+.festival-play {
+  min-height: 60px;
+  background: var(--lime);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  padding: 14px 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 36px;
+  font-size: 18px;
+  font-weight: 700;
+  box-shadow: 5px 5px 0 var(--coral);
+  transition:
+    transform var(--motion-fast),
+    box-shadow var(--motion-fast),
+    background var(--motion-fast);
+}
+.festival-play > span:last-child {
+  font-size: 28px;
+  line-height: 1;
+  transition: transform var(--motion-fast);
+}
+.festival-play:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 var(--coral);
+}
+.festival-play:hover > span:last-child {
+  transform: translate(2px, -2px);
+}
+.festival-play:active {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0 var(--coral);
+}
+.festival-play:focus-visible {
+  outline-color: var(--white);
+}
+.festival-story {
+  height: 350svh;
+  position: relative;
+  background: var(--white);
+  color: var(--ink);
+  scroll-margin-top: 0;
+}
+.story-sticky {
+  position: sticky;
+  top: 0;
+  min-height: 100svh;
+  padding: 24px var(--gutter) 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+}
+.story-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 16px;
+}
+.story-composition {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  align-items: center;
+  gap: var(--scene-space);
+  min-height: 420px;
+}
+.story-count {
+  display: block;
+  font-size: 72px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.08em;
+  margin-bottom: 24px;
+}
+.story-count small {
+  font-size: 14px;
+  letter-spacing: 0;
+  margin-left: 12px;
+}
+.story-copy h2 {
+  font-size: clamp(40px, 4.5vw, 70px);
+  line-height: 1;
+  margin-bottom: 24px;
+}
+.story-copy p {
+  color: var(--surface);
+  max-width: 360px;
+  font-size: 16px;
+}
+.story-copy .story-instruction {
+  margin-top: 24px;
+  font-size: 12px;
+}
+.story-screen {
+  min-width: 0;
+  background: var(--ink);
+  color: var(--white);
+  min-height: 430px;
+}
+.story-screen-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.story-match {
+  min-height: 380px;
+  display: grid;
+  grid-template-columns: 1fr 50px 1fr;
+  align-items: center;
+  gap: 20px;
+  padding: 32px;
+}
+.story-match > div {
+  border-radius: 50%;
+  aspect-ratio: 1;
+  background: var(--lime);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.story-match > div:nth-of-type(2) {
+  background: var(--coral);
+}
+.story-match > div span {
+  display: block;
+  font-size: clamp(40px, 5vw, 72px);
+  line-height: 1.1;
+}
+.story-match > svg {
+  width: 50px;
+  color: var(--coral);
+}
+.story-match p {
+  grid-column: 1/-1;
+  text-align: center;
+  font-size: 14px;
+}
+.story-routine {
+  padding: 24px;
+}
+.story-routine > span {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--lime);
+}
+.story-routine > strong {
+  display: block;
+  font-size: 36px;
+  letter-spacing: -0.05em;
+  margin: 8px 0 20px;
+}
+.story-score-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.story-score-bars > div {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: var(--surface);
+  padding: 8px 12px;
+  font-size: 13px;
+  transform-origin: left;
+}
+.story-score-bars b {
+  color: var(--lime);
+  font-size: 11px;
+}
+.story-score-bars span {
+  margin-left: auto;
+  color: var(--muted);
+}
+.story-routine p {
+  font-size: 11px;
+  margin-top: 12px;
+}
+.story-learn .choreo-stage {
+  border: 0;
+  border-radius: 0;
+  min-height: 330px;
+  height: 330px;
+}
+.story-learn .stage-art {
+  height: 230px;
+  min-height: 0;
+}
+.story-learn .stage-art .performer {
+  max-height: 210px;
+}
+.story-learn .stage-bottom {
+  padding: 8px 20px;
+}
+.story-learn .stage-bottom > span:last-child {
+  display: none;
+}
+.story-learn > button {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 20px;
+  border: 0;
+  background: var(--lime);
+  color: var(--ink);
+  font-weight: 700;
+}
+.story-duel {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.story-duel > div {
+  color: var(--lime);
+  border-top: 4px solid currentColor;
+  padding-top: 12px;
+  min-width: 0;
+}
+.story-duel > div.story-rival {
+  color: var(--coral-text);
+}
+.story-duel > div > span {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.story-duel strong {
+  display: block;
+  font-size: clamp(34px, 4.4vw, 64px);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  letter-spacing: -0.06em;
+}
+.story-body-space {
+  height: 190px;
+  position: relative;
+  margin-block: 12px;
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+.story-body-space > span {
+  white-space: pre-line;
+  font-size: 16px;
+  font-weight: 700;
+}
+.story-body-space i {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid currentColor;
+}
+.story-body-space i:nth-of-type(1) {
+  top: 12px;
+  left: 12px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.story-body-space i:nth-of-type(2) {
+  top: 12px;
+  right: 12px;
+  border-left: 0;
+  border-bottom: 0;
+}
+.story-body-space i:nth-of-type(3) {
+  bottom: 12px;
+  left: 12px;
+  border-right: 0;
+  border-top: 0;
+}
+.story-body-space i:nth-of-type(4) {
+  bottom: 12px;
+  right: 12px;
+  border-left: 0;
+  border-top: 0;
+}
+.story-duel small {
+  font-size: 9px;
+  color: var(--muted);
+}
+.story-duel > p {
+  grid-column: 1/-1;
+  font-size: 13px;
+  text-align: center;
+}
+.story-chapters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+.story-chapters button {
+  position: relative;
+  border: 0;
+  border-top: 2px solid var(--control-line);
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  min-height: 54px;
+  padding: 12px 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.story-chapters button > span {
+  font-size: 11px;
+  margin-right: 12px;
+}
+.story-chapters button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--lime);
+  border-color: var(--ink);
+}
+.story-chapters button:focus-visible {
+  outline-color: var(--ink);
+  outline-offset: 3px;
+}
+.story-static {
+  height: auto;
+}
+.story-static .story-sticky {
+  position: relative;
+}
+.festival-finale {
+  padding: 80px var(--gutter) 120px;
+  position: relative;
+  background: var(--coral);
+  color: var(--ink);
+}
+.festival-finale > span {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+.festival-finale h2 {
+  font-size: clamp(100px, 19vw, 290px);
+  line-height: 0.8;
+  letter-spacing: -0.09em;
+  margin: 54px 0;
+}
+.festival-finale h2 em {
+  font-style: normal;
+  margin-left: 18%;
+}
+.festival-finale p {
+  color: var(--ink);
+  margin-top: 28px;
+  font-size: 16px;
+}
+.festival-finale .festival-final-note {
+  display: block;
+  margin-top: 40px;
+  font-size: 11px;
+}
+.festival-finale .festival-play {
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.is-home .site-footer {
+  padding-bottom: 100px;
+}
+@media (max-width: 900px) {
+  .festival-intro {
+    min-height: calc(90svh - 100px);
+  }
+  .story-composition {
+    gap: 24px;
+    grid-template-columns: 0.8fr 1.2fr;
+  }
+  .story-copy h2 {
+    font-size: 40px;
+  }
+  .story-match {
+    padding: 20px;
+    gap: 12px;
+  }
+  .story-match > div span {
+    font-size: 44px;
+  }
+  .story-count {
+    font-size: 56px;
+  }
+}
+@media (max-width: 600px) {
+  .festival-intro {
+    min-height: calc(100svh - 90px);
+    padding-top: 20px;
+    padding-bottom: 76px;
+  }
+  .festival-topline {
+    font-size: 10px;
+  }
+  .festival-topline > span:last-child {
+    display: none;
+  }
+  .festival-brand {
+    padding: 48px 0 24px;
+  }
+  .festival-edition {
+    font-size: 10px;
+  }
+  .festival-wordmark {
+    width: calc(100% + 20px);
+    margin-left: -10px;
+  }
+  .festival-intro-bottom {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 28px;
+  }
+  .festival-intro h1 {
+    font-size: clamp(36px, 9.7vw, 58px);
+  }
+  .festival-intro-bottom p {
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+  .festival-intro-bottom a {
+    max-width: 260px;
+  }
+  .festival-ticket {
+    justify-content: flex-start;
+    font-size: 10px;
+  }
+  .festival-ticket > span:not(:first-child) {
+    display: none;
+  }
+  .festival-persistent {
+    bottom: 16px;
+    right: 20px;
+  }
+  .festival-persistent .festival-play {
+    min-height: 48px;
+    padding: 10px 16px;
+    font-size: 14px;
+    gap: 24px;
+  }
+  .festival-story {
+    height: auto;
+  }
+  .story-sticky {
+    position: relative;
+    min-height: 0;
+    padding: 32px var(--gutter) 100px;
+    gap: 24px;
+  }
+  .story-heading {
+    flex-direction: column;
+    gap: 8px;
+    font-size: 10px;
+  }
+  .story-composition {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    gap: 24px;
+  }
+  .story-count {
+    font-size: 40px;
+    margin-bottom: 16px;
+  }
+  .story-copy h2 {
+    font-size: 40px;
+    margin-bottom: 16px;
+  }
+  .story-copy .story-instruction {
+    margin-top: 12px;
+  }
+  .story-screen {
+    min-height: 380px;
+  }
+  .story-match {
+    min-height: 330px;
+  }
+  .story-screen-label {
+    font-size: 9px;
+    padding: 14px;
+  }
+  .story-chapters {
+    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .story-chapters button {
+    font-size: 12px;
+  }
+  .story-chapters button > span {
+    margin-right: 8px;
+  }
+  .story-duel {
+    padding: 14px;
+  }
+  .story-duel strong {
+    font-size: 42px;
+  }
+  .story-duel small {
+    font-size: 8px;
+  }
+  .festival-finale {
+    padding-top: 48px;
+  }
+  .festival-finale h2 {
+    font-size: clamp(90px, 24vw, 140px);
+  }
+  .festival-finale h2 em {
+    margin-left: 8%;
+  }
+}
+@media (max-height: 700px) and (min-width: 601px) {
+  .story-sticky {
+    position: relative;
+    min-height: 0;
+  }
+  .festival-story {
+    height: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .festival-play,
+  .festival-play > span:last-child {
+    transition: none;
+  }
+  .festival-play:hover,
+  .festival-play:active,
+  .festival-play:hover > span:last-child {
+    transform: none;
+  }
+}

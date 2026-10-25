@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { Brand } from "./Brand";
 import "./Layout.css";
 
 const links = [
@@ -14,8 +15,8 @@ export function Layout() {
   return (
     <div className="shell">
       <header className="topbar">
-        <NavLink to="/" className="wordmark" end>
-          ojustdance
+        <NavLink to="/" className="wordmark" end aria-label="ojustdance home">
+          <Brand />
         </NavLink>
         <nav className="nav" aria-label="Primary">
           {links.map((link) => (
