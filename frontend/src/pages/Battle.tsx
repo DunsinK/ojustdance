@@ -4,8 +4,6 @@ import {
   LiveChartMatch,
   type LiveMatchResult,
 } from "../components/LiveChartMatch";
-import { parseChartDocument } from "../pose/parseChart";
-import type { ChartDocument } from "../pose/types";
 import { hasCameraCheckPassed } from "../lib/cameraGate";
 import {
   connectSocket,
@@ -13,10 +11,21 @@ import {
   type MatchFoundPayload,
   type MatchResultPayload,
 } from "../lib/socket";
+import { parseChartDocument } from "../pose/parseChart";
+import { PoseStage } from "../pose/PoseStage";
+import type { ChartDocument } from "../pose/types";
+import { usePoseSource } from "../pose/usePoseSource";
 import "./pages.css";
 import "./Battle.css";
 
 type Phase = "idle" | "searching" | "matched" | "live" | "result";
+
+const STEPS = [
+  { label: "Camera Check", done: true },
+  { label: "Find Opponent", active: true },
+  { label: "Get Ready" },
+  { label: "Battle!" },
+] as const;
 
 export function Battle() {
   const cameraOk = hasCameraCheckPassed();
@@ -30,6 +39,14 @@ export function Battle() {
   const [rivalScore, setRivalScore] = useState(0);
   const [result, setResult] = useState<MatchResultPayload | null>(null);
   const matchIdRef = useRef<string | null>(null);
+
+  const lobbyCamera = phase === "idle" || phase === "searching" || phase === "result";
+  const { videoRef, canvasRef, ready } = usePoseSource({
+    mode: "camera",
+    enabled: cameraOk && lobbyCamera,
+    model: "lite",
+    liveDetect: false,
+  });
 
   useEffect(() => {
     if (!cameraOk) return;
@@ -184,22 +201,68 @@ export function Battle() {
     );
   }
 
+  const searching = phase === "searching";
+  const displayName = name.trim() || "Dancer";
+
   return (
-    <main className="page battle">
-      <header className="page-head">
-        <h1>Battle</h1>
-        <p>
-          Queue for a random rival. Same chart, live scores over Socket.io —
-          camera stays on your machine.
-        </p>
-      </header>
+    <main className="page battle battle-arena">
+      <div className="battle-arena-bg" aria-hidden="true" />
 
-      {error && <p className="api-error">{error}</p>}
+      <div className="battle-arena-top">
+        <header className="battle-arena-head">
+          <p className="battle-kicker">02 / MATCHMAKING</p>
+          <h1>
+            Find your <span>rival.</span>
+          </h1>
+          <p>
+            Queue for a random rival. Same chart, live scores over Socket.io —
+            camera stays on your machine.
+          </p>
+        </header>
 
-      <section className="battle-lobby">
-        {phase === "idle" && (
-          <>
-            <label className="field">
+        <ol className="battle-steps" aria-label="Battle flow">
+          {STEPS.map((step) => (
+            <li
+              key={step.label}
+              className={
+                "done" in step && step.done
+                  ? "done"
+                  : "active" in step && step.active
+                    ? "active"
+                    : undefined
+              }
+            >
+              <span className="battle-step-dot" aria-hidden="true">
+                {"done" in step && step.done ? "✓" : ""}
+              </span>
+              {step.label}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {error && <p className="api-error battle-arena-error">{error}</p>}
+
+      <section className="battle-vs" aria-label="Match lobby">
+        <article className="battle-card battle-card--you">
+          <div className="battle-card-avatar">
+            <PoseStage videoRef={videoRef} canvasRef={canvasRef} mirror />
+          </div>
+          <p className="battle-card-role">YOU</p>
+          <p className="battle-card-status">
+            {phase === "result" && result
+              ? result.outcome === "win"
+                ? "Victory!"
+                : result.outcome === "lose"
+                  ? "Nice try"
+                  : "Draw"
+              : searching
+                ? "In queue…"
+                : "Ready to dance!"}
+          </p>
+
+          {phase !== "result" && (
+            <label className="battle-name-field">
               Display name
               <input
                 type="text"
@@ -207,52 +270,138 @@ export function Battle() {
                 maxLength={32}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Dancer"
+                disabled={searching}
               />
             </label>
-            <button type="button" className="btn primary" onClick={queueUp}>
-              Queue up
-            </button>
-            <p className="meta-sub">
-              Needs at least one published chart. Open two browser windows to
-              test locally.
-            </p>
-          </>
-        )}
+          )}
 
-        {phase === "searching" && (
-          <>
-            <p className="meta-title searching">Finding rival…</p>
-            <p className="meta-sub">{statusMsg}</p>
-            <button type="button" className="btn ghost" onClick={cancelQueue}>
-              Cancel
-            </button>
-          </>
-        )}
+          {phase === "result" && result && (
+            <p className="battle-card-score">
+              {result.you.score.toLocaleString()} pts
+            </p>
+          )}
 
-        {phase === "result" && result && (
-          <div className="battle-result">
-            <p className="meta-title">
-              {result.outcome === "win"
-                ? "You win"
-                : result.outcome === "lose"
-                  ? "You lose"
-                  : "Draw"}
-            </p>
-            <p className="meta-sub">
-              {result.you.score.toLocaleString()} — {result.rival.score.toLocaleString()}{" "}
-              ({result.rival.name})
-            </p>
-            <div className="page-actions">
-              <button type="button" className="btn primary" onClick={queueUp}>
-                Queue again
-              </button>
-              <Link to="/solo" className="btn ghost">
-                Solo practice
-              </Link>
-            </div>
+          <ul className="battle-card-flags">
+            <li className={ready ? "ok" : ""}>
+              <span aria-hidden="true">✓</span> Camera ready
+            </li>
+            <li className="ok">
+              <span aria-hidden="true">✓</span> Private video
+            </li>
+          </ul>
+        </article>
+
+        <div className="battle-vs-mark" aria-hidden="true">
+          <span className="battle-vs-glow" />
+          <span className="battle-vs-text">VS</span>
+        </div>
+
+        <article
+          className={`battle-card battle-card--rival${searching ? " searching" : ""}`}
+        >
+          <div className="battle-card-avatar battle-card-avatar--rival">
+            {phase === "result" && result ? (
+              <span className="battle-rival-letter">
+                {(result.rival.name || "?").slice(0, 1).toUpperCase()}
+              </span>
+            ) : (
+              <span className="battle-rival-q">?</span>
+            )}
           </div>
-        )}
+          <p className="battle-card-role">RIVAL</p>
+          <p className="battle-card-status">
+            {phase === "result" && result
+              ? result.rival.name
+              : searching
+                ? "Searching for a dancer…"
+                : "Waiting for you to queue"}
+          </p>
+
+          {phase === "result" && result ? (
+            <p className="battle-card-score">
+              {result.rival.score.toLocaleString()} pts
+            </p>
+          ) : (
+            <div className="battle-search-panel">
+              {searching ? (
+                <>
+                  <span className="battle-spinner" aria-hidden="true" />
+                  <p>
+                    <strong>Finding your rival…</strong>
+                    <span>This won’t take long. Get ready!</span>
+                  </p>
+                </>
+              ) : (
+                <p className="battle-search-idle">
+                  Hit find when you’re set. Needs a published chart and another
+                  dancer in queue.
+                </p>
+              )}
+            </div>
+          )}
+        </article>
       </section>
+
+      <div className="battle-arena-actions">
+        {phase === "idle" && (
+          <button type="button" className="battle-find" onClick={queueUp}>
+            <span aria-hidden="true">▶</span>
+            FIND A BATTLE
+            <span aria-hidden="true">→</span>
+          </button>
+        )}
+        {phase === "searching" && (
+          <button type="button" className="battle-find ghost" onClick={cancelQueue}>
+            CANCEL SEARCH
+          </button>
+        )}
+        {phase === "result" && (
+          <button type="button" className="battle-find" onClick={queueUp}>
+            <span aria-hidden="true">▶</span>
+            QUEUE AGAIN
+            <span aria-hidden="true">→</span>
+          </button>
+        )}
+        <Link to="/" className="battle-home">
+          ⌂ Back home
+        </Link>
+      </div>
+
+      {statusMsg && phase === "searching" && (
+        <p className="battle-queue-note">{statusMsg}</p>
+      )}
+
+      <section className="battle-features" aria-label="How battles work">
+        <article>
+          <span className="battle-feature-icon" aria-hidden="true">
+            👥
+          </span>
+          <h3>Live 1v1 dance battles</h3>
+          <p>One song. Two dancers. Who takes the crown?</p>
+        </article>
+        <article>
+          <span className="battle-feature-icon" aria-hidden="true">
+            ▮▮
+          </span>
+          <h3>Same chart, live scores</h3>
+          <p>
+            Both players dance to the same chart with real-time scoring over
+            Socket.io.
+          </p>
+        </article>
+        <article>
+          <span className="battle-feature-icon" aria-hidden="true">
+            ⚡
+          </span>
+          <h3>Camera stays on you</h3>
+          <p>
+            Your video never leaves your device. Dance with privacy and
+            confidence.
+          </p>
+        </article>
+      </section>
+
+      <p className="battle-you-label sr-only">Playing as {displayName}</p>
     </main>
   );
 }
